@@ -15,6 +15,8 @@
       in
       {
         devShells.default = pkgs.mkShell {
+          name = "raser-frontend";
+
           packages = with pkgs; [
             nodejs_22
 
