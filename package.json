@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "test": "jest"
   },
   "dependencies": {
     "@mantine/carousel": "^9.7.3",
@@ -29,7 +30,9 @@
     "@tiptap/pm": "^3.32.0",
     "@tiptap/react": "^3.32.0",
     "@tiptap/starter-kit": "^3.32.0",
+    "axios": "^1.21.0",
     "dayjs": "^1.11.23",
+    "dotenv": "^18.0.9",
     "embla-carousel": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "next": "^16.4.2",
@@ -38,7 +41,8 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.19.43",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
@@ -48,6 +52,7 @@
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
     "prettier": "3.9.10",
+    "ts-jest": "^29.4.15",
     "typescript": "^5"
   }
 }
