@@ -4,7 +4,8 @@ import { Journal, ErrorResponse } from "@/types/journals";
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Group, Stack, Title, Text, Button } from "@mantine/core";
+import Link from "next/link";
+import { Group, Stack, Title, Text, Button, Loader } from "@mantine/core";
 import { backend } from "@/axios-client";
 
 export default function JournalsPage() {
@@ -53,9 +54,9 @@ function JournalView() {
     console.log(`Withdrawing journal ${journalID}`);
   }
 
-  if (!journalID) return <p>No journal selected.</p>;
-  if (error) return <p>Couldn’t load journal: {error.error}</p>;
-  if (!journal) return <p>Loading journal…</p>;
+  if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
+  if (error !== null) return <JournalNotFound journalID={journalID} />;
+  if (journal === null) return <JournalLoading />;
 
   return (
     <div>
@@ -65,6 +66,38 @@ function JournalView() {
         handleWithdrawJournal={withdrawJournal}
       />
     </div>
+  );
+}
+
+/**
+ * A journal not found widget
+ * @prop journalID - the attempted journal ID that was not found
+ */
+function JournalNotFound({ journalID }: { journalID: string }) {
+  return (
+    <Stack>
+      <Title ta="center">Journal Not Found</Title>
+      <Text c="dimmed" size="lg" ta="center">
+        Journal with ID {journalID} does not exist.
+      </Text>
+      <Group justify="center">
+        <Button variant="subtle" size="md" component={Link} href="/">
+          Back to Dashboard
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
+
+/**
+ * A journal loading animation
+ */
+function JournalLoading() {
+  return (
+    <Stack h="100vh" align="center" justify="center">
+      <Text size="xl">Loading journal...</Text>
+      <Loader color="blue" type="oval" size="xl" />
+    </Stack>
   );
 }
 
