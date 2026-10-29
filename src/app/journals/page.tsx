@@ -5,7 +5,7 @@ import { Journal, ErrorResponse } from "@/types/journals";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Group, Stack, Title, Text, Button, Loader } from "@mantine/core";
+import { Group, Stack, Title, Text, Button, Loader, NumberInput, Paper, Container } from "@mantine/core";
 import { backend } from "@/axios-client";
 
 export default function JournalsPage() {
@@ -54,18 +54,29 @@ function JournalView() {
     console.log(`Withdrawing journal ${journalID}`);
   }
 
+  function createIssue(volumeNumber: number, issueNumber: number): string | undefined {
+    // return "error";
+    return undefined;
+  }
+
   if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
   if (error !== null) return <JournalNotFound journalID={journalID} />;
   if (journal === null) return <JournalLoading />;
 
   return (
-    <div>
-      <TitleRow
-        journalName={journal.name}
-        journalDescription={journal.description}
-        handleWithdrawJournal={withdrawJournal}
-      />
-    </div>
+    <Container fluid>
+      <Stack>
+        <TitleRow
+          journalName={journal.name}
+          journalDescription={journal.description}
+          handleWithdrawJournal={withdrawJournal}
+        />
+        <Paper shadow="xs" withBorder p="xl">
+          <CreateIssue
+            handleCreateIssue={createIssue}/>
+        </Paper>
+      </Stack>
+    </Container>
   );
 }
 
@@ -134,3 +145,59 @@ function TitleRow({
     </Group>
   );
 }
+
+/**
+ *
+ */
+function CreateIssue({
+  handleCreateIssue,
+}: {
+  handleCreateIssue: (volumeNumber: number, issueNumber: number) => string | undefined
+}) {
+  const [volumeNumberValue, setVolumeNumberValue] = useState<number | string>(0);
+  const [issueNumberValue, setIssueNumberValue] = useState<number | string>(0);
+  const [inputError, setInputError] = useState<string>("");
+
+  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+    // Prevent page reload
+    event.preventDefault();
+
+    const result = handleCreateIssue(Number(volumeNumberValue), Number(isSecureContext))
+
+    // If result is defined, it is an error. Display that in the error text area
+    setInputError(result !== undefined ? result : "")
+  }
+
+  return (
+    <Stack gap="md">
+      <Stack gap={0}>
+        <Title order={4}>Create Issue</Title>
+        <Text>An issue is identified by its volume and number.</Text>
+      </Stack>
+      <form onSubmit={handleSubmit}>
+        <Group>
+          <NumberInput
+            radius="sm"
+            label="Volume"
+            withAsterisk
+            min={0}
+            value={volumeNumberValue} 
+            onChange={setVolumeNumberValue} />
+          <NumberInput
+            radius="sm"
+            label="Issue"
+            withAsterisk
+            min={0}
+            value={issueNumberValue} 
+            onChange={setIssueNumberValue} />
+          <Button variant="filled" color="dark" mt="auto" type="submit">
+            Create Issue
+          </Button>
+        </Group>
+      </form>
+      <Text c="red">{inputError}</Text> 
+    </Stack>
+  )
+}
+
+
