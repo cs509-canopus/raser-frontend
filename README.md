@@ -37,4 +37,3 @@ Also upload public assets from `public/` folder:
 ```sh
 aws s3 sync public/ s3://<bucket-name>/public/ --delete
 ```
-
