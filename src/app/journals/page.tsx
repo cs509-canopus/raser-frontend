@@ -1,10 +1,11 @@
 "use client";
 
-import styles from "./page.module.css";
+import { Journal, ErrorResponse } from "@/types/journals";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Group, Stack, Title, Text, Button } from "@mantine/core";
+import { backend } from "@/axios-client";
 
 export default function JournalsPage() {
   return (
@@ -18,18 +19,51 @@ function JournalView() {
   const searchParams = useSearchParams();
   const journalID = searchParams.get("id"); // string | null
 
-  // TODO: get journal from the backend
+  const [journal, setJournal] = useState<Journal | null>(null);
+  const [error, setError] = useState<ErrorResponse | null>(null);
+
+  // Retrieve journal info whenever journalID changes
+  useEffect(() => {
+    if (!journalID) return;
+    let cancelled = false;
+
+    // Fetch journal info
+    backend
+      .get<Journal>(`/journals/${journalID}`)
+      .then((res) => {
+        if (!cancelled) {
+          setJournal(res.data);
+        }
+      })
+      .catch((err) => {
+        if (err.response && !cancelled) {
+          setError(err.response);
+        } else {
+          console.log(`Unknown error on GET /journals/${journalID}`, err);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [journalID]);
 
   function withdrawJournal() {
     // TODO: POST /journals/{journalID}/withdraw
-    console.log(`Withdrawing journal ${journalID}`)
+    console.log(`Withdrawing journal ${journalID}`);
   }
+
+  if (!journalID) return <p>No journal selected.</p>;
+  if (error) return <p>Couldn’t load journal: {error.error}</p>;
+  if (!journal) return <p>Loading journal…</p>;
 
   return (
     <div>
-      <TitleRow 
-        journalName="Journal of the ACM"
-        handleWithdrawJournal={withdrawJournal} />
+      <TitleRow
+        journalName={journal.name}
+        journalDescription={journal.description}
+        handleWithdrawJournal={withdrawJournal}
+      />
     </div>
   );
 }
@@ -37,7 +71,7 @@ function JournalView() {
 interface TitleRowProps {
   journalName: string;
   journalDescription?: string;
-  handleWithdrawJournal: () => void,
+  handleWithdrawJournal: () => void;
 }
 
 /**
@@ -46,7 +80,11 @@ interface TitleRowProps {
  * has a button to withdraw the journal
  * @prop journalName -
  */
-function TitleRow({ journalName, journalDescription, handleWithdrawJournal }: TitleRowProps) {
+function TitleRow({
+  journalName,
+  journalDescription,
+  handleWithdrawJournal,
+}: TitleRowProps) {
   return (
     <Group justify="space-between" align="center">
       <Stack gap={4}>
