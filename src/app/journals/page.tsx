@@ -1,6 +1,6 @@
 "use client";
 
-import { Journal, ErrorResponse } from "@/types/journals";
+import { Journal, ErrorResponse } from "@/types";
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -55,13 +55,14 @@ function JournalView() {
   }
 
   function createIssue(volumeNumber: number, issueNumber: number): string | undefined {
-    // return "error";
     return undefined;
   }
 
   if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
   if (error !== null) return <JournalNotFound journalID={journalID} />;
   if (journal === null) return <JournalLoading />;
+
+  console.log("Journal:", journal)
 
   return (
     <Container fluid>
@@ -198,6 +199,10 @@ function CreateIssue({
       <Text c="red">{inputError}</Text> 
     </Stack>
   )
+}
+
+function IssueList() {
+
 }
 
 
