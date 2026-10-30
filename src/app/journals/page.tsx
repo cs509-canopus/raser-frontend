@@ -1,11 +1,11 @@
 "use client";
 
-import { Journal, ErrorResponse } from "@/types";
+import { Journal, Issue, ErrorResponse } from "@/types";
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Group, Stack, Title, Text, Button, Loader, NumberInput, Paper, Container } from "@mantine/core";
+import { Group, Stack, Title, Text, Button, Loader, NumberInput, Paper, Container, Table } from "@mantine/core";
 import { backend } from "@/axios-client";
 
 export default function JournalsPage() {
@@ -75,6 +75,12 @@ function JournalView() {
         <Paper shadow="xs" withBorder p="xl">
           <CreateIssue
             handleCreateIssue={createIssue}/>
+        </Paper>
+        <Paper shadow="xs" withBorder p="xl">
+          <Stack gap="sm">
+            <Title order={4}>Issues</Title>
+            <IssueTable issueIDs={journal.issues.map(i => i.id)} />
+          </Stack>
         </Paper>
       </Stack>
     </Container>
@@ -201,8 +207,69 @@ function CreateIssue({
   )
 }
 
-function IssueList() {
+/**
+ * A table containing each of the issues in `issueIDs`.
+ * @prop issueIDs - IDs of the issues to render
+ */
+function IssueTable({ issueIDs }: { issueIDs: string[] }) {
+  const [issues, setIssues] = useState<Issue[]>([])
 
+  // Fetch the full issue for each of the issues
+  useEffect(() => {
+    let cancelled = false;
+    setIssues([]);
+
+    for (const issueID of issueIDs) {
+      // Fetch issue info
+      backend
+        .get<Issue>(`/issues/${issueID}`)
+        .then((res) => {
+          if (!cancelled) {
+            setIssues(prev => [...prev, res.data]);
+          }
+        })
+        .catch((err) => {
+          // Skip adding this issue
+          console.log(`Unknown error on GET /issues/${issueID}`, err);
+          console.log(`Skipping adding issue ${issueID}`);
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [issueIDs])
+
+  // Order by volume number then issue number
+  issues.sort((a, b) => (a.volumeNumber - b.volumeNumber) || (a.issueNumber - b.issueNumber));
+
+  // Create table rows out of each issue
+  const tableRows = issues.map((issue) => (
+    <Table.Tr key={issue.issueID}>
+      <Table.Td>Vol. {issue.volumeNumber}, No. {issue.issueNumber}</Table.Td>
+      <Table.Td>{issue.papers.length}</Table.Td>
+      <Table.Td>0</Table.Td>
+      <Table.Td>Status</Table.Td>
+      <Table.Td>Open</Table.Td>
+    </Table.Tr>
+  ))
+
+  return (
+    <Table>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th>Issue</Table.Th>
+          <Table.Th>Papers</Table.Th>
+          <Table.Th>Reviewers Assigned</Table.Th>
+          <Table.Th>Status</Table.Th>
+          <Table.Th>Actions</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
+        {tableRows}
+      </Table.Tbody>
+    </Table>
+  );
 }
 
 
