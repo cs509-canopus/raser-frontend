@@ -8,9 +8,7 @@ export interface Journal {
   websiteUrl?: string;
   coverImage?: string;
   createdAt: Date;
-  issues: [{
-    id: string
-  }];
+  issues: { id: string }[];
 }
 
 /**
