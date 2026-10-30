@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Group, Stack, Title, Text, Button, Loader, NumberInput, Paper, Container, Table } from "@mantine/core";
 import { backend } from "@/axios-client";
+import { AxiosError } from "axios";
 
 export default function JournalsPage() {
   return (
@@ -54,7 +55,32 @@ function JournalView() {
     console.log(`Withdrawing journal ${journalID}`);
   }
 
-  function createIssue(volumeNumber: number, issueNumber: number): string | undefined {
+  async function createIssue(volumeNumber: number, issueNumber: number): Promise<string | undefined> {
+    try {
+      if (journal === null) return;
+
+      // Issue request to create issue under this journal
+      const res = await backend.post<Issue>(`/journals/${journalID}/issues`, {
+        volumeNumber, issueNumber
+      });
+      
+      // Add issueID to the journal
+      const newIssueID = res.data.issueID
+      setJournal(journal => { 
+        if (!journal) return journal;
+        return {
+          ...journal,
+          issues: [...journal.issues, { id: newIssueID }],
+        }
+      });
+    } catch (err) {
+      if (err instanceof AxiosError && err.response) {
+        return err.response.data.error
+      } else {
+        console.log(`Unknown error on POST /journals/${journalID}/issues`, err);
+      }
+    }
+
     return undefined;
   }
 
@@ -159,17 +185,17 @@ function TitleRow({
 function CreateIssue({
   handleCreateIssue,
 }: {
-  handleCreateIssue: (volumeNumber: number, issueNumber: number) => string | undefined
+  handleCreateIssue: (volumeNumber: number, issueNumber: number) => Promise<string | undefined>
 }) {
   const [volumeNumberValue, setVolumeNumberValue] = useState<number | string>(0);
   const [issueNumberValue, setIssueNumberValue] = useState<number | string>(0);
   const [inputError, setInputError] = useState<string>("");
 
-  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     // Prevent page reload
     event.preventDefault();
 
-    const result = handleCreateIssue(Number(volumeNumberValue), Number(isSecureContext))
+    const result = await handleCreateIssue(Number(volumeNumberValue), Number(issueNumberValue))
 
     // If result is defined, it is an error. Display that in the error text area
     setInputError(result !== undefined ? result : "")
