@@ -8,7 +8,21 @@ export interface Journal {
   websiteUrl?: string;
   coverImage?: string;
   createdAt: Date;
-  issues: string[];
+  issues: [{
+    id: string
+  }];
+}
+
+/**
+ * Response body for GetIssue lambda function at GET /issue/{issueID} on HTTP 200
+ */
+export interface Issue {
+  journalID: string;
+  issueID: string;
+  volumeNumber: number;
+  issueNumber: number;
+  createdAt: Date;
+  papers: string[];
 }
 
 export interface ErrorResponse {
