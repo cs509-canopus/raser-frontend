@@ -214,6 +214,11 @@ function CreateIssue({
 function IssueTable({ issueIDs }: { issueIDs: string[] }) {
   const [issues, setIssues] = useState<Issue[]>([])
 
+  function handleDelete(issueID: string) {
+    console.log(`Deleting issue ${issueID}`);
+    // TODO: call DELETE /issues/{issueID}
+  }
+
   // Fetch the full issue for each of the issues
   useEffect(() => {
     let cancelled = false;
@@ -247,10 +252,15 @@ function IssueTable({ issueIDs }: { issueIDs: string[] }) {
   const tableRows = issues.map((issue) => (
     <Table.Tr key={issue.issueID}>
       <Table.Td>Vol. {issue.volumeNumber}, No. {issue.issueNumber}</Table.Td>
-      <Table.Td>{issue.papers.length}</Table.Td>
-      <Table.Td>0</Table.Td>
-      <Table.Td>Status</Table.Td>
-      <Table.Td>Open</Table.Td>
+      <Table.Td ta="center">{issue.papers.length}</Table.Td>
+      <Table.Td ta="center">0</Table.Td>
+      <Table.Td ta="center">Status</Table.Td>
+      <Table.Td ta="right">
+        <Group justify="flex-end">
+          <Button variant="outline" color="dark" component={Link} href={`/issues/?id=${issue.issueID}`}>Open</Button>
+          <Button variant="outline" color="red" onClick={() => handleDelete(issue.issueID)}>Delete</Button>
+        </Group>
+      </Table.Td>
     </Table.Tr>
   ))
 
@@ -259,10 +269,10 @@ function IssueTable({ issueIDs }: { issueIDs: string[] }) {
       <Table.Thead>
         <Table.Tr>
           <Table.Th>Issue</Table.Th>
-          <Table.Th>Papers</Table.Th>
-          <Table.Th>Reviewers Assigned</Table.Th>
-          <Table.Th>Status</Table.Th>
-          <Table.Th>Actions</Table.Th>
+          <Table.Th ta="center">Papers</Table.Th>
+          <Table.Th ta="center">Reviewers Assigned</Table.Th>
+          <Table.Th ta="center">Status</Table.Th>
+          <Table.Th ta="right">Actions</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
@@ -271,5 +281,4 @@ function IssueTable({ issueIDs }: { issueIDs: string[] }) {
     </Table>
   );
 }
-
 
