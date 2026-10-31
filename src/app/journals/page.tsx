@@ -280,18 +280,30 @@ function CreateIssue({
   );
   const [issueNumberValue, setIssueNumberValue] = useState<number | string>(0);
   const [inputError, setInputError] = useState<string>("");
+  const [isCreating, setIsCreating] = useState(false);
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     // Prevent page reload
     event.preventDefault();
 
+    // Disable create button while the issue is being created.
+    setIsCreating(true);
     const result = await handleCreateIssue(
       Number(volumeNumberValue),
       Number(issueNumberValue),
     );
+    setIsCreating(false);
 
     // If result is defined, it is an error. Display that in the error text area
-    setInputError(result !== undefined ? result : "");
+    if (result !== undefined) {
+      setInputError(result);
+      return;
+    }
+
+    // Reset field values and error text
+    setIssueNumberValue(0);
+    setVolumeNumberValue(0);
+    setInputError("");
   }
 
   return (
@@ -318,8 +330,14 @@ function CreateIssue({
             value={issueNumberValue}
             onChange={setIssueNumberValue}
           />
-          <Button variant="filled" color="dark" mt="auto" type="submit">
-            Create Issue
+          <Button
+            variant="filled"
+            color="dark"
+            mt="auto"
+            type="submit"
+            disabled={isCreating}
+          >
+            {isCreating ? "Creating..." : "Create Issue"}
           </Button>
         </Group>
       </form>
