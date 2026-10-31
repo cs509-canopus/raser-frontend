@@ -36,6 +36,9 @@ function JournalView() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [error, setError] = useState<ErrorResponse | null>(null);
 
+  // Can only withdraw this journal if it has 0 issues
+  const canWithdraw = issues.length === 0;
+
   // Retrieve journal and issues info whenever journalID changes
   useEffect(() => {
     if (!journalID) return;
@@ -83,8 +86,19 @@ function JournalView() {
   }, [journalID]);
 
   function withdrawJournal() {
-    // TODO: POST /journals/{journalID}/withdraw
-    console.log(`Withdrawing journal ${journalID}`);
+    if (journal === null) return;
+
+    backend
+      .post<Issue>(`/journals/${journalID}/withdraw`)
+      .then(() => {
+        setJournal(null);
+
+        // Reload the page, which will bring them to JournalNotFound
+        window.location.reload();
+      })
+      .catch((err) => {
+        console.log(`Error on POST /journals/${journalID}/withdraw`, err);
+      });
   }
 
   async function createIssue(
@@ -125,7 +139,7 @@ function JournalView() {
 
   if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
   if (error !== null) return <JournalNotFound journalID={journalID} />;
-  if (journal === null) return <JournalLoading />;
+  if (journal === null || issues.length < journal.issues.length) return <JournalLoading />;
 
   console.log("Journal:", journal);
 
@@ -135,7 +149,7 @@ function JournalView() {
         <TitleRow
           journalName={journal.name}
           journalDescription={journal.description}
-          handleWithdrawJournal={withdrawJournal}
+          handleWithdrawJournal={canWithdraw ? withdrawJournal : undefined}
         />
         <Paper shadow="xs" withBorder p="xl">
           <CreateIssue handleCreateIssue={createIssue} />
@@ -186,7 +200,7 @@ function JournalLoading() {
 interface TitleRowProps {
   journalName: string;
   journalDescription?: string;
-  handleWithdrawJournal: () => void;
+  handleWithdrawJournal?: () => void;
 }
 
 /**
@@ -200,6 +214,9 @@ function TitleRow({
   journalDescription,
   handleWithdrawJournal,
 }: TitleRowProps) {
+  // Only show the withdraw button if handleWithdrawJournal is passed
+  const canWithdraw = handleWithdrawJournal !== undefined;
+
   return (
     <Group justify="space-between" align="center">
       <Stack gap={4}>
@@ -210,9 +227,14 @@ function TitleRow({
         </Text>
       </Stack>
 
-      <Button variant="outline" color="red" onClick={handleWithdrawJournal}>
-        Withdraw Journal
-      </Button>
+      {
+        canWithdraw &&
+        <Stack>
+          <Button variant="outline" color="red" onClick={handleWithdrawJournal}>
+            Withdraw Journal
+          </Button>
+        </Stack>
+      }
     </Group>
   );
 }
