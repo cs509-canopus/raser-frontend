@@ -343,8 +343,48 @@ function IssueTable({ issues, handleDeleteIssue }: IssueTableProps) {
     (a, b) => a.volumeNumber - b.volumeNumber || a.issueNumber - b.issueNumber,
   );
 
-  // Create table rows out of each issue
   const tableRows = issues.map((issue) => (
+    <IssueTableRow
+      key={issue.issueID}
+      issue={issue}
+      handleDelete={() => handleDeleteIssue(issue.issueID)}
+    />
+  ));
+
+  return (
+    <Table>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th>Issue</Table.Th>
+          <Table.Th ta="center">Papers</Table.Th>
+          <Table.Th ta="center">Reviewers Assigned</Table.Th>
+          <Table.Th ta="center">Status</Table.Th>
+          <Table.Th ta="right">Actions</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>{tableRows}</Table.Tbody>
+    </Table>
+  );
+}
+
+function IssueTableRow({
+  issue,
+  handleDelete,
+}: {
+  issue: Issue;
+  handleDelete: () => void;
+}) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  function handleClick() {
+    handleDelete();
+
+    // Disables the delete button while the issue is being deleted. Prevents
+    // user from sending multiple delete requests
+    setIsDeleting(true);
+  }
+
+  return (
     <Table.Tr key={issue.issueID}>
       <Table.Td>
         Vol. {issue.volumeNumber}, No. {issue.issueNumber}
@@ -365,28 +405,13 @@ function IssueTable({ issues, handleDeleteIssue }: IssueTableProps) {
           <Button
             variant="outline"
             color="red"
-            disabled={issue.papers.length > 0}
-            onClick={() => handleDeleteIssue(issue.issueID)}
+            disabled={issue.papers.length > 0 || isDeleting}
+            onClick={handleClick}
           >
             Delete
           </Button>
         </Group>
       </Table.Td>
     </Table.Tr>
-  ));
-
-  return (
-    <Table>
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th>Issue</Table.Th>
-          <Table.Th ta="center">Papers</Table.Th>
-          <Table.Th ta="center">Reviewers Assigned</Table.Th>
-          <Table.Th ta="center">Status</Table.Th>
-          <Table.Th ta="right">Actions</Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>{tableRows}</Table.Tbody>
-    </Table>
   );
 }
