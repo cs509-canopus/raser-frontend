@@ -5,7 +5,18 @@ import { Journal, Issue, ErrorResponse } from "@/types";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Group, Stack, Title, Text, Button, Loader, NumberInput, Paper, Container, Table } from "@mantine/core";
+import {
+  Group,
+  Stack,
+  Title,
+  Text,
+  Button,
+  Loader,
+  NumberInput,
+  Paper,
+  Container,
+  Table,
+} from "@mantine/core";
 import { backend } from "@/axios-client";
 import { AxiosError } from "axios";
 
@@ -22,28 +33,49 @@ function JournalView() {
   const journalID = searchParams.get("id"); // string | null
 
   const [journal, setJournal] = useState<Journal | null>(null);
+  const [issues, setIssues] = useState<Issue[]>([]);
   const [error, setError] = useState<ErrorResponse | null>(null);
 
-  // Retrieve journal info whenever journalID changes
+  // Retrieve journal and issues info whenever journalID changes
   useEffect(() => {
     if (!journalID) return;
     let cancelled = false;
 
-    // Fetch journal info
-    backend
-      .get<Journal>(`/journals/${journalID}`)
-      .then((res) => {
+    const fetchAllData = async () => {
+      try {
+        // Get journal info
+        const journalResponse = await backend.get<Journal>(
+          `/journals/${journalID}`,
+        );
         if (!cancelled) {
-          setJournal(res.data);
+          setJournal(journalResponse.data);
+          const fetchedIssues = await Promise.all(
+            journalResponse.data.issues.map(async ({ id: issueID }) => {
+              try {
+                const issueResponse = await backend.get<Issue>(
+                  `/issues/${issueID}`,
+                );
+                return issueResponse.data;
+              } catch (err) {
+                console.log(`Error fetching issue ${issueID}:`, err);
+                if (!cancelled && err instanceof AxiosError && err.response) {
+                  setError(err.response.data);
+                }
+              }
+            }),
+          );
+          setIssues(fetchedIssues.filter((issue) => issue !== undefined)); // Filter out any undefined values
         }
-      })
-      .catch((err) => {
-        if (err.response && !cancelled) {
-          setError(err.response);
-        } else {
-          console.log(`Unknown error on GET /journals/${journalID}`, err);
+      } catch (err) {
+        // Handle journal fetch errors
+        console.log(`Error fetching journal ${journalID}:`, err);
+        if (!cancelled && err instanceof AxiosError && err.response) {
+          setError(err.response.data);
         }
-      });
+      }
+    };
+
+    fetchAllData();
 
     return () => {
       cancelled = true;
@@ -55,27 +87,31 @@ function JournalView() {
     console.log(`Withdrawing journal ${journalID}`);
   }
 
-  async function createIssue(volumeNumber: number, issueNumber: number): Promise<string | undefined> {
+  async function createIssue(
+    volumeNumber: number,
+    issueNumber: number,
+  ): Promise<string | undefined> {
     try {
       if (journal === null) return;
 
       // Issue request to create issue under this journal
       const res = await backend.post<Issue>(`/journals/${journalID}/issues`, {
-        volumeNumber, issueNumber
+        volumeNumber,
+        issueNumber,
       });
-      
+
       // Add issueID to the journal
-      const newIssueID = res.data.issueID
-      setJournal(journal => { 
+      const newIssueID = res.data.issueID;
+      setJournal((journal) => {
         if (!journal) return journal;
         return {
           ...journal,
           issues: [...journal.issues, { id: newIssueID }],
-        }
+        };
       });
     } catch (err) {
       if (err instanceof AxiosError && err.response) {
-        return err.response.data.error
+        return err.response.data.error;
       } else {
         console.log(`Unknown error on POST /journals/${journalID}/issues`, err);
       }
@@ -88,7 +124,7 @@ function JournalView() {
   if (error !== null) return <JournalNotFound journalID={journalID} />;
   if (journal === null) return <JournalLoading />;
 
-  console.log("Journal:", journal)
+  console.log("Journal:", journal);
 
   return (
     <Container fluid>
@@ -99,13 +135,12 @@ function JournalView() {
           handleWithdrawJournal={withdrawJournal}
         />
         <Paper shadow="xs" withBorder p="xl">
-          <CreateIssue
-            handleCreateIssue={createIssue}/>
+          <CreateIssue handleCreateIssue={createIssue} />
         </Paper>
         <Paper shadow="xs" withBorder p="xl">
           <Stack gap="sm">
             <Title order={4}>Issues</Title>
-            <IssueTable issueIDs={journal.issues.map(i => i.id)} />
+            <IssueTable issues={issues} />
           </Stack>
         </Paper>
       </Stack>
@@ -185,9 +220,14 @@ function TitleRow({
 function CreateIssue({
   handleCreateIssue,
 }: {
-  handleCreateIssue: (volumeNumber: number, issueNumber: number) => Promise<string | undefined>
+  handleCreateIssue: (
+    volumeNumber: number,
+    issueNumber: number,
+  ) => Promise<string | undefined>;
 }) {
-  const [volumeNumberValue, setVolumeNumberValue] = useState<number | string>(0);
+  const [volumeNumberValue, setVolumeNumberValue] = useState<number | string>(
+    0,
+  );
   const [issueNumberValue, setIssueNumberValue] = useState<number | string>(0);
   const [inputError, setInputError] = useState<string>("");
 
@@ -195,10 +235,13 @@ function CreateIssue({
     // Prevent page reload
     event.preventDefault();
 
-    const result = await handleCreateIssue(Number(volumeNumberValue), Number(issueNumberValue))
+    const result = await handleCreateIssue(
+      Number(volumeNumberValue),
+      Number(issueNumberValue),
+    );
 
     // If result is defined, it is an error. Display that in the error text area
-    setInputError(result !== undefined ? result : "")
+    setInputError(result !== undefined ? result : "");
   }
 
   return (
@@ -214,81 +257,72 @@ function CreateIssue({
             label="Volume"
             withAsterisk
             min={0}
-            value={volumeNumberValue} 
-            onChange={setVolumeNumberValue} />
+            value={volumeNumberValue}
+            onChange={setVolumeNumberValue}
+          />
           <NumberInput
             radius="sm"
             label="Issue"
             withAsterisk
             min={0}
-            value={issueNumberValue} 
-            onChange={setIssueNumberValue} />
+            value={issueNumberValue}
+            onChange={setIssueNumberValue}
+          />
           <Button variant="filled" color="dark" mt="auto" type="submit">
             Create Issue
           </Button>
         </Group>
       </form>
-      <Text c="red">{inputError}</Text> 
+      <Text c="red">{inputError}</Text>
     </Stack>
-  )
+  );
 }
 
 /**
- * A table containing each of the issues in `issueIDs`.
- * @prop issueIDs - IDs of the issues to render
+ * A table containing each of the issues in `issues`.
+ * @prop issues - the issues to render
  */
-function IssueTable({ issueIDs }: { issueIDs: string[] }) {
-  const [issues, setIssues] = useState<Issue[]>([])
-
+function IssueTable({ issues }: { issues: Issue[] }) {
   function handleDelete(issueID: string) {
     console.log(`Deleting issue ${issueID}`);
     // TODO: call DELETE /issues/{issueID}
   }
 
-  // Fetch the full issue for each of the issues
-  useEffect(() => {
-    let cancelled = false;
-    setIssues([]);
-
-    for (const issueID of issueIDs) {
-      // Fetch issue info
-      backend
-        .get<Issue>(`/issues/${issueID}`)
-        .then((res) => {
-          if (!cancelled) {
-            setIssues(prev => [...prev, res.data]);
-          }
-        })
-        .catch((err) => {
-          // Skip adding this issue
-          console.log(`Unknown error on GET /issues/${issueID}`, err);
-          console.log(`Skipping adding issue ${issueID}`);
-        });
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [issueIDs])
-
   // Order by volume number then issue number
-  issues.sort((a, b) => (a.volumeNumber - b.volumeNumber) || (a.issueNumber - b.issueNumber));
+  issues.sort(
+    (a, b) => a.volumeNumber - b.volumeNumber || a.issueNumber - b.issueNumber,
+  );
 
   // Create table rows out of each issue
   const tableRows = issues.map((issue) => (
     <Table.Tr key={issue.issueID}>
-      <Table.Td>Vol. {issue.volumeNumber}, No. {issue.issueNumber}</Table.Td>
+      <Table.Td>
+        Vol. {issue.volumeNumber}, No. {issue.issueNumber}
+      </Table.Td>
       <Table.Td ta="center">{issue.papers.length}</Table.Td>
       <Table.Td ta="center">0</Table.Td>
       <Table.Td ta="center">Status</Table.Td>
       <Table.Td ta="right">
         <Group justify="flex-end">
-          <Button variant="outline" color="dark" component={Link} href={`/issues/?id=${issue.issueID}`}>Open</Button>
-          <Button variant="outline" color="red" onClick={() => handleDelete(issue.issueID)}>Delete</Button>
+          <Button
+            variant="outline"
+            color="dark"
+            component={Link}
+            href={`/issues/?id=${issue.issueID}`}
+          >
+            Open
+          </Button>
+          <Button
+            variant="outline"
+            color="red"
+            onClick={() => handleDelete(issue.issueID)}
+          >
+            Delete
+          </Button>
         </Group>
       </Table.Td>
     </Table.Tr>
-  ))
+  ));
 
   return (
     <Table>
@@ -301,10 +335,7 @@ function IssueTable({ issueIDs }: { issueIDs: string[] }) {
           <Table.Th ta="right">Actions</Table.Th>
         </Table.Tr>
       </Table.Thead>
-      <Table.Tbody>
-        {tableRows}
-      </Table.Tbody>
+      <Table.Tbody>{tableRows}</Table.Tbody>
     </Table>
   );
 }
-
