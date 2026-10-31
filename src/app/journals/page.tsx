@@ -91,9 +91,9 @@ function JournalView() {
     volumeNumber: number,
     issueNumber: number,
   ): Promise<string | undefined> {
-    try {
-      if (journal === null) return;
+    if (journal === null) return;
 
+    try {
       // Issue request to create issue under this journal
       const res = await backend.post<Issue>(`/journals/${journalID}/issues`, {
         volumeNumber,
@@ -103,12 +103,15 @@ function JournalView() {
       // Add issueID to the journal
       const newIssueID = res.data.issueID;
       setJournal((journal) => {
-        if (!journal) return journal;
+        if (journal === null) return journal;
         return {
           ...journal,
           issues: [...journal.issues, { id: newIssueID }],
         };
       });
+
+      // Add issue to the list of issues
+      setIssues(prev => [...prev, res.data])
     } catch (err) {
       if (err instanceof AxiosError && err.response) {
         return err.response.data.error;
