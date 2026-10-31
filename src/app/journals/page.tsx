@@ -89,7 +89,7 @@ function JournalView() {
     if (journal === null) return;
 
     backend
-      .post<Issue>(`/journals/${journalID}/withdraw`)
+      .post(`/journals/${journalID}/withdraw`)
       .then(() => {
         setJournal(null);
 
@@ -105,8 +105,6 @@ function JournalView() {
     volumeNumber: number,
     issueNumber: number,
   ): Promise<string | undefined> {
-    if (journal === null) return;
-
     try {
       // Issue request to create issue under this journal
       const res = await backend.post<Issue>(`/journals/${journalID}/issues`, {
@@ -125,7 +123,7 @@ function JournalView() {
       });
 
       // Add issue to the list of issues
-      setIssues(prev => [...prev, res.data])
+      setIssues((prev) => [...prev, res.data]);
     } catch (err) {
       if (err instanceof AxiosError && err.response) {
         return err.response.data.error;
@@ -137,9 +135,37 @@ function JournalView() {
     return undefined;
   }
 
+  function deleteIssue(issueID: string) {
+    backend
+      .delete(`/issues/${issueID}`)
+      .then((res) => {
+        const deletedIssueID = res.data.issueID;
+
+        // Remove issueID from the journal
+        setJournal((journal) => {
+          if (journal === null) return journal;
+          return {
+            ...journal,
+            issues: journal.issues.filter(
+              (issue) => issue.id != deletedIssueID,
+            ),
+          };
+        });
+
+        // Remove issue from the list of issues
+        setIssues((prev) =>
+          prev.filter((issue) => issue.issueID != deletedIssueID),
+        );
+      })
+      .catch((err) => {
+        console.log(`Error on DELETE /issues/${issueID}`, err);
+      });
+  }
+
   if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
   if (error !== null) return <JournalNotFound journalID={journalID} />;
-  if (journal === null || issues.length < journal.issues.length) return <JournalLoading />;
+  if (journal === null || issues.length < journal.issues.length)
+    return <JournalLoading />;
 
   console.log("Journal:", journal);
 
@@ -157,7 +183,7 @@ function JournalView() {
         <Paper shadow="xs" withBorder p="xl">
           <Stack gap="sm">
             <Title order={4}>Issues</Title>
-            <IssueTable issues={issues} />
+            <IssueTable issues={issues} handleDeleteIssue={deleteIssue} />
           </Stack>
         </Paper>
       </Stack>
@@ -227,14 +253,13 @@ function TitleRow({
         </Text>
       </Stack>
 
-      {
-        canWithdraw &&
+      {canWithdraw && (
         <Stack>
           <Button variant="outline" color="red" onClick={handleWithdrawJournal}>
             Withdraw Journal
           </Button>
         </Stack>
-      }
+      )}
     </Group>
   );
 }
@@ -303,16 +328,16 @@ function CreateIssue({
   );
 }
 
+interface IssueTableProps {
+  issues: Issue[];
+  handleDeleteIssue: (issue: string) => void;
+}
+
 /**
  * A table containing each of the issues in `issues`.
  * @prop issues - the issues to render
  */
-function IssueTable({ issues }: { issues: Issue[] }) {
-  function handleDelete(issueID: string) {
-    console.log(`Deleting issue ${issueID}`);
-    // TODO: call DELETE /issues/{issueID}
-  }
-
+function IssueTable({ issues, handleDeleteIssue }: IssueTableProps) {
   // Order by volume number then issue number
   issues.sort(
     (a, b) => a.volumeNumber - b.volumeNumber || a.issueNumber - b.issueNumber,
@@ -340,7 +365,8 @@ function IssueTable({ issues }: { issues: Issue[] }) {
           <Button
             variant="outline"
             color="red"
-            onClick={() => handleDelete(issue.issueID)}
+            disabled={issue.papers.length > 0}
+            onClick={() => handleDeleteIssue(issue.issueID)}
           >
             Delete
           </Button>
