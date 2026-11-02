@@ -40,7 +40,10 @@ function PaperDetail() {
     let cancelled = false;
     getPaper(paperId)
       .then((p) => {
-        if (!cancelled) setPaper(p);
+        if (!cancelled) {
+          setPaper(p);
+          setClosed(p.isClosed);
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return;

@@ -17,6 +17,7 @@ export interface PaperView {
   issueID: string;
   paperID: string;
   title?: string;
+  isClosed: boolean;
   authors?: string[];
   publicationDate?: string | null;
   paperUrl?: string | null;
