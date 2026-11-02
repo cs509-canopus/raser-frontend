@@ -23,6 +23,16 @@ export interface PaperView {
   reviews: string[];
 }
 
+// GET /issues/{issueID}, papers are the raw `SELECT id` rows
+export interface IssueView {
+  journalID: string;
+  issueID: string;
+  volumeNumber: number;
+  issueNumber: number;
+  createdAt: string;
+  papers: { id: string }[];
+}
+
 export class PapersApiError extends Error {
   constructor(
     message: string,
@@ -59,6 +69,10 @@ export function addPaper(
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export function getIssue(issueId: string): Promise<IssueView> {
+  return request<IssueView>(`/issues/${issueId}`);
 }
 
 export function getPaper(paperId: string): Promise<PaperView> {
