@@ -79,6 +79,6 @@ export function getPaper(paperId: string): Promise<PaperView> {
   return request<PaperView>(`/papers/${paperId}`);
 }
 
-export function withdrawPaper(paperId: string): Promise<{ paperID: string }> {
-  return request(`/papers/${paperId}/withdraw`, { method: "POST" });
+export function closePaper(paperId: string): Promise<{ paperID: string }> {
+  return request(`/papers/${paperId}/close`, { method: "POST" });
 }

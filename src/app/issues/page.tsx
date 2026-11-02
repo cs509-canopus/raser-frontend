@@ -22,9 +22,9 @@ import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
 import {
   addPaper,
+  closePaper,
   getIssue,
   getPaper,
-  withdrawPaper,
   type IssueView,
   type PaperView,
   PapersApiError,
@@ -45,11 +45,11 @@ function IssueDetail() {
   const [issue, setIssue] = useState<IssueView | null>(null);
   const [loading, setLoading] = useState(true);
   const [papers, setPapers] = useState<IssuePaper[]>([]);
-  const [withdrawnIds, setWithdrawnIds] = useState<Set<string>>(new Set());
+  const [closedIds, setClosedIds] = useState<Set<string>>(new Set());
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
   const [error, setError] = useState<string | null>(null);
-  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [closingId, setClosingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,20 +122,18 @@ function IssueDetail() {
     }
   }
 
-  async function handleWithdraw(paperId: string) {
-    setWithdrawingId(paperId);
+  async function handleClose(paperId: string) {
+    setClosingId(paperId);
     setError(null);
     try {
-      await withdrawPaper(paperId);
-      setWithdrawnIds((prev) => new Set(prev).add(paperId));
+      await closePaper(paperId);
+      setClosedIds((prev) => new Set(prev).add(paperId));
     } catch (err) {
       setError(
-        err instanceof PapersApiError
-          ? err.message
-          : "Failed to withdraw paper",
+        err instanceof PapersApiError ? err.message : "Failed to close paper",
       );
     } finally {
-      setWithdrawingId(null);
+      setClosingId(null);
     }
   }
 
@@ -170,7 +168,7 @@ function IssueDetail() {
       ) : (
         <List spacing="sm" listStyleType="none">
           {papers.map((paper) => {
-            const closed = withdrawnIds.has(paper.paperID);
+            const closed = closedIds.has(paper.paperID);
             return (
               <List.Item key={paper.paperID}>
                 <Card withBorder padding="sm" radius="md">
@@ -189,17 +187,17 @@ function IssueDetail() {
                     </div>
                     <Group>
                       <Badge color={closed ? "red" : "green"}>
-                        {closed ? "Withdrawn" : "Active"}
+                        {closed ? "Closed" : "Active"}
                       </Badge>
                       <Button
                         size="xs"
                         color="red"
                         variant="outline"
                         disabled={closed}
-                        loading={withdrawingId === paper.paperID}
-                        onClick={() => handleWithdraw(paper.paperID)}
+                        loading={closingId === paper.paperID}
+                        onClick={() => handleClose(paper.paperID)}
                       >
-                        Withdraw
+                        Close
                       </Button>
                     </Group>
                   </Group>

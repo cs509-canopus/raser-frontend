@@ -15,8 +15,8 @@ import {
 } from "@mantine/core";
 import dayjs from "dayjs";
 import {
+  closePaper,
   getPaper,
-  withdrawPaper,
   type PaperView,
   PapersApiError,
 } from "@/lib/papers-api";
@@ -33,8 +33,8 @@ function PaperDetail() {
   const paperId = useSearchParams().get("id") ?? "";
   const [paper, setPaper] = useState<PaperView | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [withdrawing, setWithdrawing] = useState(false);
-  const [withdrawn, setWithdrawn] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [closed, setClosed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,20 +53,18 @@ function PaperDetail() {
     };
   }, [paperId]);
 
-  async function handleWithdraw() {
-    setWithdrawing(true);
+  async function handleClose() {
+    setClosing(true);
     setError(null);
     try {
-      await withdrawPaper(paperId);
-      setWithdrawn(true);
+      await closePaper(paperId);
+      setClosed(true);
     } catch (err) {
       setError(
-        err instanceof PapersApiError
-          ? err.message
-          : "Failed to withdraw paper",
+        err instanceof PapersApiError ? err.message : "Failed to close paper",
       );
     } finally {
-      setWithdrawing(false);
+      setClosing(false);
     }
   }
 
@@ -102,8 +100,8 @@ function PaperDetail() {
           <Stack gap={4}>
             <Group gap="sm" align="center">
               <Title order={2}>{title}</Title>
-              <Badge variant="light" color={withdrawn ? "red" : "green"}>
-                {withdrawn ? "Withdrawn" : "Active"}
+              <Badge variant="light" color={closed ? "red" : "green"}>
+                {closed ? "Closed" : "Active"}
               </Badge>
             </Group>
             {details && (
@@ -128,11 +126,11 @@ function PaperDetail() {
             <Button
               color="red"
               variant="outline"
-              disabled={withdrawn}
-              loading={withdrawing}
-              onClick={handleWithdraw}
+              disabled={closed}
+              loading={closing}
+              onClick={handleClose}
             >
-              {withdrawn ? "Withdrawn" : "Withdraw paper"}
+              {closed ? "Closed" : "Close paper"}
             </Button>
           </Group>
         </Group>
