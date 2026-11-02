@@ -4,6 +4,7 @@
     --color-text: #25262b;
     --color-text-muted: #868e96;
     --color-bg-subtle: #f1f3f5;
+    --color-withdraw: #e03131;
 }
 
 .container {
@@ -46,6 +47,32 @@
     padding: 8.5px 18px;
     align-items: flex-start;
     gap: 10px;
+}
+
+.button:hover {
+    border-color: var(--color-text);
+    color: var(--color-text);
+    background-color: var(--color-surface);
+}
+
+.buttonAlt {
+    composes: button;
+    border-color: var(--color-text);
+    color: var(--color-text);
+    background-color: var(--color-surface);
+}
+
+.buttonAlt:hover {
+    background-color: var(--color-text);
+    color: var(--color-surface);
+    border-color: var(--color-surface);
+}
+
+.withdrawButton {
+    composes: button;
+    border-color: var(--color-withdraw);
+    color: var(--color-withdraw);
+    background-color: var(--color-surface);
 }
 
 .title {
