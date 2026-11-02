@@ -62,15 +62,14 @@ function DesignRubricWidget() {
                 Here you can create a new rubric for assessing scientific experimental research.
             </Text>
             <Button 
-                className={styles.button} 
-                radius="md" 
-                color="#25262b"
+                className={styles.button}
                 onClick={() => {
                     // Navigate to the rubric creation page
+                    // TODO: edit this so that it shows individual rubrics to be edited
                     window.location.href = "/rubrics";
                 }}
             >
-                <Text c="#fff">Create rubric</Text>
+                <Text>Create rubric</Text>
             </Button>
         </Container>
     );
@@ -87,15 +86,13 @@ function BrowseRubricsWidget() {
                 See every published rubric. Open one read-only, or duplicate it to use as the starting point for a new rubric.
             </Text>
             <Button 
-                className={styles.button} 
-                radius="md" 
-                color="#25262b"
+                className={styles.button}
                 // onClick={() => {
                 //     // Navigate to the rubric browsing page
                     
                 // }}
             >
-                <Text c="#fff">View all rubrics</Text>
+                <Text>View all rubrics</Text>
             </Button>
         </Container>
     );
