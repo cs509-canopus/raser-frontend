@@ -28,6 +28,7 @@ import {
   type IssueView,
   type PaperView,
   PapersApiError,
+  deleteIssue,
 } from "@/lib/papers-api";
 
 type IssuePaper = Pick<PaperView, "paperID" | "title" | "authors">;
@@ -98,6 +99,17 @@ function IssueDetail() {
     },
   });
 
+  async function handleDeleteIssue() {
+    try {
+      await deleteIssue(issueId);
+      setIssue(null)
+      window.location.reload();
+    }
+    catch (err) {
+      setError(err instanceof PapersApiError ? err.message : "Failed to delete issue")
+    }
+  }
+
   async function handleAddPaper(values: typeof form.values) {
     setError(null);
     try {
@@ -145,11 +157,9 @@ function IssueDetail() {
             ? `Volume ${issue.volumeNumber}, Issue ${issue.issueNumber}`
             : `Issue ${issueId}`}
         </Title>
-        <Tooltip label="No DELETE /issues/{issueID} endpoint exists yet">
-          <Button color="red" variant="outline" disabled>
-            Delete issue
-          </Button>
-        </Tooltip>
+        <Button color="red" variant="outline" onClick={handleDeleteIssue}>
+          Delete issue
+        </Button>
       </Group>
 
       <Group justify="space-between" mt="md">
