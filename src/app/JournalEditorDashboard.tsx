@@ -22,33 +22,33 @@ function JournalEditorView() {
     const [error, setError] = useState<ErrorResponse | null>(null);
     const [modalOpened, {open: openModal, close: closeModal}] =  useDisclosure(false);
 
-    // // retrieve journals of user
-    // useEffect(() => {
-    //     let cancelled = false;
-    //     const fetchJournals = async () => {
-    //         try {
-    //             const journalResponse = await backend.get<Journal[]>(
-    //                 `/journals`,
-    //             );
-    //             console.log(typeof journalResponse.data, journalResponse.config.baseURL, journalResponse.request?.responseURL);
-    //             console.log(journalResponse.data);
-    //             if (!cancelled) {
-    //                 setJournals(journalResponse.data);
-    //             }
-    //         } catch (e) {
-    //             console.log(`Error fetching journals`, e);
-    //             if (!cancelled && e instanceof AxiosError && e.response) {
-    //                 setError(e.response.data);
-    //             }
-    //         }
-    //     };
+    // retrieve journals of user
+    useEffect(() => {
+        let cancelled = false;
+        const fetchJournals = async () => {
+            try {
+                const journalResponse = await backend.get<{ journals: Journal[]}>(
+                    `/journals`,
+                );
+                console.log(typeof journalResponse.data, journalResponse.config.baseURL, journalResponse.request?.responseURL);
+                console.log(journalResponse.data);
+                if (!cancelled) {
+                    setJournals(journalResponse.data.journals);
+                }
+            } catch (e) {
+                console.log(`Error fetching journals`, e);
+                if (!cancelled && e instanceof AxiosError && e.response) {
+                    setError(e.response.data);
+                }
+            }
+        };
 
-    //     fetchJournals();
+        fetchJournals();
 
-    //     return () => {
-    //         cancelled = true;
-    //     };
-    // }, []);
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // TODO: withdraw journal
 
@@ -68,6 +68,10 @@ function JournalEditorView() {
             }
         }
         return undefined;
+    }
+
+    if (journals === undefined) {
+        return (<p>Loading...</p>);
     }
 
     return (
@@ -97,20 +101,20 @@ function JournalEditorView() {
                     </Text>
                 )}
                 <SimpleGrid cols={2} spacing="xs">
-                    <div>
+                    {/* <div> */}
                         <JournalCardList 
                             journals={journals}
                             onSelect={(j) => console.log("select", j.journalID)}
                             onWithdraw={(j) => console.log("withdraw", j.journalID)}
                         />
-                    </div>
-                    <div>
+                    {/* </div> */}
+                    {/* <div> */}
                         <Container className={styles.container} fluid>
                             <Title order={5}>
                                 Reviewer rubrics
                             </Title>
                         </Container>
-                    </div>
+                    {/* </div> */}
                 </SimpleGrid>
             </Flex>
 
@@ -144,12 +148,13 @@ function JournalCardList({
             </Container>
         );
     }
+    // console.log(journals.journals);
     return (
         <Stack gap="xs">
             <SimpleGrid cols={2} spacing="xs">
                 {journals.map((journal) => (
                     <JournalCard 
-                        key={journal.journalID}
+                        // key={journal.journalID}
                         journal={journal}
                         onSelect={onSelect}
                         onWithdraw={onWithdraw}
