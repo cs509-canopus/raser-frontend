@@ -11,10 +11,15 @@ export interface AddedPaper {
   paperUrl: string | null;
 }
 
+// GET /papers/{paperID}, new fields from backend #49
 export interface PaperView {
   journalID: string;
   issueID: string;
   paperID: string;
+  title?: string;
+  authors?: string[];
+  publicationDate?: string | null;
+  paperUrl?: string | null;
   reviews: string[];
 }
 
@@ -46,7 +51,10 @@ export interface AddPaperInput {
   paperUrl?: string | null;
 }
 
-export function addPaper(issueId: string, input: AddPaperInput): Promise<AddedPaper> {
+export function addPaper(
+  issueId: string,
+  input: AddPaperInput,
+): Promise<AddedPaper> {
   return request<AddedPaper>(`/issues/${issueId}/papers`, {
     method: "POST",
     body: JSON.stringify(input),
