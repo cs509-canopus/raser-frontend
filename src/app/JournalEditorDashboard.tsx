@@ -68,10 +68,15 @@ function JournalEditorView() {
   }, []);
 
   // add journal function for modal
-  async function addJournal(name: string): Promise<string | undefined> {
+  async function addJournal(
+    name: string,
+    description?: string,
+    websiteURL?: string,
+    coverImageURL?: string,
+  ): Promise<string | undefined> {
     try {
       // journal add request
-      const req = await backend.post<Journal>(`/journals`, { name });
+      const req = await backend.post<Journal>(`/journals`, { name, description, websiteURL, coverImageURL });
 
       // add new journal to list
       setJournals((prev) => [...prev, req.data]);
@@ -258,20 +263,47 @@ interface AddJournalModalProps {
   onSubmit: (name: string) => void;
 }
 
+// New journal interface
+interface NewJournal {
+  name: string;
+  description?: string;
+  websiteURL?: string;
+  coverImageURL?: string;
+}
+
 function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [websiteURL, setWebsiteURL] = useState("");
+  const [coverImageURL, setCoverImageURL] = useState("");
+
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setWebsiteURL("");
+    setCoverImageURL("");
+  };
 
   const handleClose = () => {
-    setName("");
+    resetForm();
     onClose();
   };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    onSubmit(trimmed);
-    setName("");
+    
+    // name sure 'name' field is filled out
+    const nameTrimmed = name.trim();
+    if (!nameTrimmed) return;
+
+    onSubmit({
+      name: nameTrimmed,
+      description: description.trim() || undefined,
+      websiteURL: websiteURL.trim() || undefined,
+      coverImageURL: coverImageURL.trim() || undefined,
+    });
+
+    resetForm();
     onClose();
   };
 
@@ -295,6 +327,24 @@ function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
           withAsterisk
           value={name}
           onChange={(event) => setName(event.currentTarget.value)}
+        />
+        <TextInput
+          label="Description"
+          placeholder="e.g. This journal covers the topics of ACM Transactions on Computer Systems"
+          value={description}
+          onChange={(event) => setDescription(event.currentTarget.value)}
+        />
+        <TextInput
+          label="Website URL"
+          placeholder="e.g. https://dl.acm.org/journal/tocs"
+          value={websiteURL}
+          onChange={(event) => setWebsiteURL(event.currentTarget.value)}
+        />
+        <TextInput
+          label="Cover Image URL"
+          placeholder="e.g. cover_image_url.png"
+          value={coverImageURL}
+          onChange={(event) => setCoverImageURL(event.currentTarget.value)}
         />
         <Group justify="flex-end" gap="xs">
           <Button className={styles.buttonAlt} onClick={handleClose}>
