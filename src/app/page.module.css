@@ -1,0 +1,100 @@
+:root {
+  --color-border: #e9ecef;
+  --color-surface: #ffffff;
+  --color-text: #25262b;
+  --color-text-muted: #868e96;
+  --color-bg-subtle: #f1f3f5;
+  --color-withdraw: #e03131;
+}
+
+.container {
+  display: flex;
+  padding: 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1 0 0;
+
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  /* background: var(--color-surface); */
+  box-shadow:
+    0 1px 2px 0 rgba(0, 0, 0, 0.1),
+    0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.rubricList {
+  composes: container;
+  align-items: stretch;
+  width: 100%;
+}
+
+.rubricList th {
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.rubricList td {
+  text-align: left;
+}
+
+/* .rubricList thead {
+  background-color: #f8f9fa;
+} */
+
+.button {
+  display: flex;
+  padding: 8.5px 18px;
+  align-items: flex-center;
+  vertical-align: flex-center;
+  gap: 10px;
+  border-radius: 8px;
+  background-color: var(--color-text);
+}
+
+.button:hover {
+  border-color: var(--color-text);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.buttonAlt {
+  composes: button;
+  border-color: var(--color-text);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.buttonAlt:hover {
+  background-color: var(--color-text);
+  color: var(--color-surface);
+  border-color: var(--color-surface);
+}
+
+.withdrawButton {
+  composes: button;
+  border-color: var(--color-withdraw);
+  color: var(--color-withdraw);
+  background-color: var(--color-surface);
+}
+
+.withdrawButton:hover {
+  border-color: var(--color-surface);
+  color: var(--color-surface);
+  background-color: var(--color-withdraw);
+}
+
+.title {
+  color: var(--color-text);
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.text {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+}
