@@ -79,7 +79,13 @@ function JournalEditorView() {
       const req = await backend.post<Journal>(`/journals`, { name, description, websiteURL, coverImageURL });
 
       // add new journal to list
-      setJournals((prev) => [...prev, req.data]);
+      setJournals((prev) => [...prev, {
+        id: req.data.journalID,
+        name: req.data.name,
+        description: req.data.description,
+        websiteUrl: req.data.websiteUrl,
+        coverImage: req.data.coverImageUrl,
+      }]);
     } catch (e) {
       if (e instanceof AxiosError && e.response) {
         return e.response.data.error;
@@ -296,12 +302,12 @@ function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
     const nameTrimmed = name.trim();
     if (!nameTrimmed) return;
 
-    onSubmit({
-      name: nameTrimmed,
-      description: description.trim() || undefined,
-      websiteURL: websiteURL.trim() || undefined,
-      coverImageURL: coverImageURL.trim() || undefined,
-    });
+    onSubmit(
+      nameTrimmed,
+      description.trim() || undefined,
+      websiteURL.trim() || undefined,
+      coverImageURL.trim() || undefined,
+    );
 
     resetForm();
     onClose();
