@@ -16,6 +16,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Environment variables
+
+Put these in `.env.local`:
+
+```sh
+NEXT_PUBLIC_API_URL=<api gateway url for your stage>
+NEXT_PUBLIC_USER_POOL_ID=<cognito user pool id>
+NEXT_PUBLIC_USER_POOL_CLIENT_ID=<cognito app client id>
+```
+
+The user pool values come from your stage's `AuthenticationStack` in raser-backend. Log in at `/login`.
+
 ## Deploy to S3
 
 #todo WORK IN PROGRESS

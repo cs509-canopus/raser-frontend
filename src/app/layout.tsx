@@ -6,6 +6,7 @@ import {
   mantineHtmlProps,
 } from "@mantine/core";
 import { theme } from "@/theme";
+import ConfigureAmplify from "./ConfigureAmplify";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "./globals.css";
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ColorSchemeScript defaultColorScheme="auto" />
       </head>
       <body>
+        <ConfigureAmplify />
         <MantineProvider theme={theme} defaultColorScheme="auto">
           {children}
         </MantineProvider>
