@@ -21,8 +21,8 @@ import {
 import { backend } from "@/axios-client";
 import { AxiosError } from "axios";
 import { useDisclosure } from "@mantine/hooks";
-import { JournalNotFound } from "./JournalNotFound";
 import { LoadingPage } from "@/components/LoadingPage";
+import { NotFoundPage } from "@/components/NotFoundPage";
 
 export default function JournalsPage() {
   return (
@@ -164,7 +164,11 @@ function JournalView() {
   }
 
   if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
-  if (error !== null) return <JournalNotFound journalID={journalID} />;
+  if (error !== null) {
+    return <NotFoundPage 
+      titleText="Journal not found." 
+      bodyText="The requested journal does not exist under your account. Try checking the URL, or go back to the dashboard." />
+  }
   if (journal === null || issues.length < journal.issues.length)
     return <LoadingPage loadingText="Loading journal..."/>;
 
