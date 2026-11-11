@@ -22,6 +22,8 @@ import {
 import { backend } from "@/axios-client";
 import { AxiosError } from "axios";
 import { useDisclosure } from "@mantine/hooks";
+import { JournalNotFound } from "./JournalNotFound";
+import { JournalLoading } from "./JournalLoading";
 
 export default function JournalsPage() {
   return (
@@ -188,38 +190,6 @@ function JournalView() {
         </Paper>
       </Stack>
     </Container>
-  );
-}
-
-/**
- * A journal not found widget
- * @prop journalID - the attempted journal ID that was not found
- */
-function JournalNotFound({ journalID }: { journalID: string }) {
-  return (
-    <Stack>
-      <Title ta="center">Journal Not Found</Title>
-      <Text c="dimmed" size="lg" ta="center">
-        Journal with ID {journalID} does not exist.
-      </Text>
-      <Group justify="center">
-        <Button variant="subtle" size="md" component={Link} href="/">
-          Back to Dashboard
-        </Button>
-      </Group>
-    </Stack>
-  );
-}
-
-/**
- * A journal loading animation
- */
-function JournalLoading() {
-  return (
-    <Stack h="100vh" align="center" justify="center">
-      <Text size="xl">Loading journal...</Text>
-      <Loader color="blue" type="oval" size="xl" />
-    </Stack>
   );
 }
 
