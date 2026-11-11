@@ -223,11 +223,15 @@ function TitleRow({
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
   const [inputText, setInputText] = useState("");
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   function tryWithdraw() {
     // Only allow withdrawing if the journal name has been entered in
     if (inputText === journalName) {
       handleWithdrawJournal();
+
+      // Disable withdraw button while the journal is being withdrawn
+      setIsWithdrawing(true);
     }
   }
 
@@ -269,9 +273,9 @@ function TitleRow({
             variant="outline"
             color="red"
             onClick={tryWithdraw}
-            disabled={inputText !== journalName}
+            disabled={inputText !== journalName || isWithdrawing}
           >
-            Withdraw Journal
+            {isWithdrawing ? "Withdrawing..." : "Withdraw Journal"}
           </Button>
         </Stack>
       </Modal>
