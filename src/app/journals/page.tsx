@@ -16,9 +16,12 @@ import {
   Paper,
   Container,
   Table,
+  Modal,
+  TextInput,
 } from "@mantine/core";
 import { backend } from "@/axios-client";
 import { AxiosError } from "axios";
+import { useDisclosure } from "@mantine/hooks";
 
 export default function JournalsPage() {
   return (
@@ -35,9 +38,6 @@ function JournalView() {
   const [journal, setJournal] = useState<Journal | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [error, setError] = useState<ErrorResponse | null>(null);
-
-  // Can only withdraw this journal if it has 0 issues
-  const canWithdraw = issues.length === 0;
 
   // Retrieve journal and issues info whenever journalID changes
   useEffect(() => {
@@ -175,7 +175,7 @@ function JournalView() {
         <TitleRow
           journalName={journal.name}
           journalDescription={journal.description}
-          handleWithdrawJournal={canWithdraw ? withdrawJournal : undefined}
+          handleWithdrawJournal={withdrawJournal}
         />
         <Paper shadow="xs" withBorder p="xl">
           <CreateIssue handleCreateIssue={createIssue} />
@@ -226,7 +226,7 @@ function JournalLoading() {
 interface TitleRowProps {
   journalName: string;
   journalDescription?: string;
-  handleWithdrawJournal?: () => void;
+  handleWithdrawJournal: () => void;
 }
 
 /**
@@ -240,8 +240,15 @@ function TitleRow({
   journalDescription,
   handleWithdrawJournal,
 }: TitleRowProps) {
-  // Only show the withdraw button if handleWithdrawJournal is passed
-  const canWithdraw = handleWithdrawJournal !== undefined;
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [inputText, setInputText] = useState("");
+
+  function tryWithdraw() {
+    // Only allow withdrawing if the journal name has been entered in
+    if (inputText === journalName) {
+      handleWithdrawJournal();
+    }
+  }
 
   return (
     <Group justify="space-between" align="center">
@@ -253,13 +260,36 @@ function TitleRow({
         </Text>
       </Stack>
 
-      {canWithdraw && (
+      <Stack>
+        <Button variant="outline" color="red" onClick={openModal}>
+          Withdraw Journal
+        </Button>
+      </Stack>
+
+      <Modal 
+        opened={modalOpened} 
+        onClose={closeModal} 
+        title="Are you sure you want to withdraw this journal?"
+        size="lg">
         <Stack>
-          <Button variant="outline" color="red" onClick={handleWithdrawJournal}>
+          <Text fw="bold" c="red">
+            Withdrawing a journal deletes all issues, papers, and reviews associated with the journal. This cannot be undone! 
+          </Text>
+          <TextInput
+            label="Enter the name of the journal below to acknowlege the action you are about to take"
+            value={inputText}
+            onChange={(event) => setInputText(event.currentTarget.value)}
+            withAsterisk
+            placeholder={journalName}/>
+          <Button 
+            variant="outline" 
+            color="red" 
+            onClick={tryWithdraw} 
+            disabled={inputText !== journalName}>
             Withdraw Journal
           </Button>
         </Stack>
-      )}
+      </Modal>
     </Group>
   );
 }
