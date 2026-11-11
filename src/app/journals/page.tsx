@@ -11,7 +11,6 @@ import {
   Title,
   Text,
   Button,
-  Loader,
   NumberInput,
   Paper,
   Container,
@@ -23,7 +22,7 @@ import { backend } from "@/axios-client";
 import { AxiosError } from "axios";
 import { useDisclosure } from "@mantine/hooks";
 import { JournalNotFound } from "./JournalNotFound";
-import { JournalLoading } from "./JournalLoading";
+import { LoadingPage } from "@/components/LoadingPage";
 
 export default function JournalsPage() {
   return (
@@ -167,7 +166,7 @@ function JournalView() {
   if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
   if (error !== null) return <JournalNotFound journalID={journalID} />;
   if (journal === null || issues.length < journal.issues.length)
-    return <JournalLoading />;
+    return <LoadingPage loadingText="Loading journal..."/>;
 
   console.log("Journal:", journal);
 
