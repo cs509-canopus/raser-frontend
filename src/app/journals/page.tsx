@@ -165,12 +165,15 @@ function JournalView() {
 
   if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
   if (error !== null) {
-    return <NotFoundPage 
-      titleText="Journal not found." 
-      bodyText="The requested journal does not exist under your account. Try checking the URL, or go back to the dashboard." />
+    return (
+      <NotFoundPage
+        titleText="Journal not found."
+        bodyText="The requested journal does not exist under your account. Try checking the URL, or go back to the dashboard."
+      />
+    );
   }
   if (journal === null || issues.length < journal.issues.length)
-    return <LoadingPage loadingText="Loading journal..."/>;
+    return <LoadingPage loadingText="Loading journal..." />;
 
   console.log("Journal:", journal);
 
@@ -213,7 +216,8 @@ function TitleRow({
   journalDescription,
   handleWithdrawJournal,
 }: TitleRowProps) {
-  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [modalOpened, { open: openModal, close: closeModal }] =
+    useDisclosure(false);
   const [inputText, setInputText] = useState("");
 
   function tryWithdraw() {
@@ -239,26 +243,30 @@ function TitleRow({
         </Button>
       </Stack>
 
-      <Modal 
-        opened={modalOpened} 
-        onClose={closeModal} 
+      <Modal
+        opened={modalOpened}
+        onClose={closeModal}
         title="Are you sure you want to withdraw this journal?"
-        size="lg">
+        size="lg"
+      >
         <Stack>
           <Text fw="bold" c="red">
-            Withdrawing a journal deletes all issues, papers, and reviews associated with the journal. This cannot be undone! 
+            Withdrawing a journal deletes all issues, papers, and reviews
+            associated with the journal. This cannot be undone!
           </Text>
           <TextInput
             label="Enter the name of the journal below to acknowlege the action you are about to take"
             value={inputText}
             onChange={(event) => setInputText(event.currentTarget.value)}
             withAsterisk
-            placeholder={journalName}/>
-          <Button 
-            variant="outline" 
-            color="red" 
-            onClick={tryWithdraw} 
-            disabled={inputText !== journalName}>
+            placeholder={journalName}
+          />
+          <Button
+            variant="outline"
+            color="red"
+            onClick={tryWithdraw}
+            disabled={inputText !== journalName}
+          >
             Withdraw Journal
           </Button>
         </Stack>

@@ -1,18 +1,22 @@
-import { Button, Container, Group, Text, Title } from '@mantine/core';
-import classes from './NotFoundPage.module.css';
+import { Button, Container, Group, Text, Title } from "@mantine/core";
+import classes from "./NotFoundPage.module.css";
 import Link from "next/link";
 
 interface NotFoundPageProps {
-  titleText?: string; 
+  titleText?: string;
   bodyText?: string;
+
+  /** Path or URL to redirect the user to after clicking redirect button */
   redirectPath?: string;
+
+  /** Text to show on the redirect button */
   redirectText?: string;
 }
 
 /**
  * Not found page that displays a help text.
  */
-export function NotFoundPage({ 
+export function NotFoundPage({
   titleText = "The requested resource was not found.",
   bodyText = "Check the URL, or go back to another page.",
   redirectPath = "/",

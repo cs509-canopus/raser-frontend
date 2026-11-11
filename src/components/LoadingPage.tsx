@@ -1,8 +1,4 @@
-import {
-  Loader,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { Loader, Stack, Text } from "@mantine/core";
 
 interface LoadingPageProps {
   /** Text to show while the component is visible */
