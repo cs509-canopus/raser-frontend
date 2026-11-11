@@ -1,6 +1,6 @@
 "use client";
 
-import { Journal, Issue, ErrorResponse } from "@/types";
+import { Journal, Issue } from "@/types";
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -11,14 +11,17 @@ import {
   Title,
   Text,
   Button,
-  Loader,
   NumberInput,
   Paper,
   Container,
   Table,
 } from "@mantine/core";
-import { backend } from "@/axios-client";
-import { AxiosError } from "axios";
+import { useDisclosure } from "@mantine/hooks";
+import { LoadingPage } from "@/components/LoadingPage";
+import { NotFoundPage } from "@/components/NotFoundPage";
+import { getJournal, withdrawJournal } from "@/lib/journals-api";
+import { createIssue, deleteIssue, getIssue } from "@/lib/issues-api";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function JournalsPage() {
   return (
@@ -34,10 +37,7 @@ function JournalView() {
 
   const [journal, setJournal] = useState<Journal | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
-  const [error, setError] = useState<ErrorResponse | null>(null);
-
-  // Can only withdraw this journal if it has 0 issues
-  const canWithdraw = issues.length === 0;
+  const [error, setError] = useState<string>("");
 
   // Retrieve journal and issues info whenever journalID changes
   useEffect(() => {
@@ -45,37 +45,42 @@ function JournalView() {
     let cancelled = false;
 
     const fetchAllData = async () => {
-      try {
-        // Get journal info
-        const journalResponse = await backend.get<Journal>(
-          `/journals/${journalID}`,
-        );
-        if (!cancelled) {
-          setJournal(journalResponse.data);
-          const fetchedIssues = await Promise.all(
-            journalResponse.data.issues.map(async ({ id: issueID }) => {
-              try {
-                const issueResponse = await backend.get<Issue>(
-                  `/issues/${issueID}`,
-                );
-                return issueResponse.data;
-              } catch (err) {
-                console.log(`Error fetching issue ${issueID}:`, err);
-                if (!cancelled && err instanceof AxiosError && err.response) {
-                  setError(err.response.data);
-                }
-              }
-            }),
-          );
-          setIssues(fetchedIssues.filter((issue) => issue !== undefined)); // Filter out any undefined values
+      // Get journal info
+      const { result, error } = await getJournal(journalID);
+      if (error) {
+        if (!cancelled && "data" in error) {
+          setError(error.data);
         }
-      } catch (err) {
-        // Handle journal fetch errors
-        console.log(`Error fetching journal ${journalID}:`, err);
-        if (!cancelled && err instanceof AxiosError && err.response) {
-          setError(err.response.data);
-        }
+        return;
       }
+
+      setJournal({
+        journalID: result.journalID,
+        createdAt: new Date(result.createdAt),
+        name: result.name,
+        description: result.description,
+        websiteUrl: result.websiteUrl,
+        coverImage: result.coverImage,
+        issues: result.issues,
+      });
+
+      // Get info about every issue in the journal
+      const fetchedIssues = await Promise.all(
+        result.issues.map(async ({ id: issueID }) => {
+          const { result: issueResponse, error: issueError } =
+            await getIssue(issueID);
+          if (issueError) {
+            if (!cancelled && "data" in issueError) {
+              setError(issueError.data);
+            }
+          }
+
+          return issueResponse;
+        }),
+      );
+
+      // Filter out undefined values
+      setIssues(fetchedIssues.filter((issue) => issue !== undefined));
     };
 
     fetchAllData();
@@ -85,87 +90,93 @@ function JournalView() {
     };
   }, [journalID]);
 
-  function withdrawJournal() {
-    if (journal === null) return;
+  async function handleWithdrawJournal() {
+    if (journal === null || journalID === null) return;
 
-    backend
-      .post(`/journals/${journalID}/withdraw`)
-      .then(() => {
-        setJournal(null);
+    const result = await withdrawJournal(journalID);
+    if (result.error) {
+      console.warn(`Error withdrawing journal ${journalID}: ${error}`);
+      return;
+    }
 
-        // Reload the page, which will bring them to JournalNotFound
-        window.location.reload();
-      })
-      .catch((err) => {
-        console.log(`Error on POST /journals/${journalID}/withdraw`, err);
-      });
+    setJournal(null);
+
+    // Redirect to dashboard
+    window.location.href = "/";
   }
 
-  async function createIssue(
+  async function handleCreateIssue(
     volumeNumber: number,
     issueNumber: number,
   ): Promise<string | undefined> {
-    try {
-      // Issue request to create issue under this journal
-      const res = await backend.post<Issue>(`/journals/${journalID}/issues`, {
-        volumeNumber,
-        issueNumber,
-      });
+    if (journal === null || journalID === null) return;
 
-      // Add issueID to the journal
-      const newIssueID = res.data.issueID;
-      setJournal((journal) => {
-        if (journal === null) return journal;
-        return {
-          ...journal,
-          issues: [...journal.issues, { id: newIssueID }],
-        };
-      });
-
-      // Add issue to the list of issues
-      setIssues((prev) => [...prev, res.data]);
-    } catch (err) {
-      if (err instanceof AxiosError && err.response) {
-        return err.response.data.error;
+    const { result, error } = await createIssue(journalID, {
+      volumeNumber,
+      issueNumber,
+    });
+    if (error) {
+      if ("data" in error) {
+        return error.data;
       } else {
-        console.log(`Unknown error on POST /journals/${journalID}/issues`, err);
+        return error.cause;
       }
     }
 
+    // Add new issueID to the journal
+    setJournal((journal) => {
+      if (journal === null) return journal;
+      return {
+        ...journal,
+        issues: [...journal.issues, { id: result.issueID }],
+      };
+    });
+
+    // Add new issue to the list of issues
+    setIssues((prev) => [
+      ...prev,
+      {
+        journalID,
+        ...result,
+      },
+    ]);
+
+    // No error
     return undefined;
   }
 
-  function deleteIssue(issueID: string) {
-    backend
-      .delete(`/issues/${issueID}`)
-      .then((res) => {
-        const deletedIssueID = res.data.issueID;
+  async function handleDeleteIssue(issueID: string) {
+    const { result, error } = await deleteIssue(issueID);
+    if (error) {
+      return;
+    }
 
-        // Remove issueID from the journal
-        setJournal((journal) => {
-          if (journal === null) return journal;
-          return {
-            ...journal,
-            issues: journal.issues.filter(
-              (issue) => issue.id != deletedIssueID,
-            ),
-          };
-        });
+    // Remove issueID from the journal
+    setJournal((journal) => {
+      if (journal === null) return journal;
+      return {
+        ...journal,
+        issues: journal.issues.filter((issue) => issue.id !== result.issueID),
+      };
+    });
 
-        // Remove issue from the list of issues
-        setIssues((prev) =>
-          prev.filter((issue) => issue.issueID != deletedIssueID),
-        );
-      })
-      .catch((err) => {
-        console.log(`Error on DELETE /issues/${issueID}`, err);
-      });
+    // Remove issue from the list of issues
+    setIssues((prev) =>
+      prev.filter((issue) => issue.issueID != result.issueID),
+    );
   }
 
-  if (journalID === null) return <p>No journal selected.</p>; // TODO: list all public journals in this case
-  if (error !== null) return <JournalNotFound journalID={journalID} />;
+  if (journalID === null) return <p>No journal selected.</p>;
+  if (error !== "") {
+    return (
+      <NotFoundPage
+        titleText="Journal not found."
+        bodyText="The requested journal does not exist under your account. Try checking the URL, or go back to the dashboard."
+      />
+    );
+  }
   if (journal === null || issues.length < journal.issues.length)
-    return <JournalLoading />;
+    return <LoadingPage loadingText="Loading journal..." />;
 
   console.log("Journal:", journal);
 
@@ -175,15 +186,15 @@ function JournalView() {
         <TitleRow
           journalName={journal.name}
           journalDescription={journal.description}
-          handleWithdrawJournal={canWithdraw ? withdrawJournal : undefined}
+          handleWithdrawJournal={handleWithdrawJournal}
         />
         <Paper shadow="xs" withBorder p="xl">
-          <CreateIssue handleCreateIssue={createIssue} />
+          <CreateIssue handleCreateIssue={handleCreateIssue} />
         </Paper>
         <Paper shadow="xs" withBorder p="xl">
           <Stack gap="sm">
             <Title order={4}>Issues</Title>
-            <IssueTable issues={issues} handleDeleteIssue={deleteIssue} />
+            <IssueTable issues={issues} handleDeleteIssue={handleDeleteIssue} />
           </Stack>
         </Paper>
       </Stack>
@@ -191,42 +202,10 @@ function JournalView() {
   );
 }
 
-/**
- * A journal not found widget
- * @prop journalID - the attempted journal ID that was not found
- */
-function JournalNotFound({ journalID }: { journalID: string }) {
-  return (
-    <Stack>
-      <Title ta="center">Journal Not Found</Title>
-      <Text c="dimmed" size="lg" ta="center">
-        Journal with ID {journalID} does not exist.
-      </Text>
-      <Group justify="center">
-        <Button variant="subtle" size="md" component={Link} href="/">
-          Back to Dashboard
-        </Button>
-      </Group>
-    </Stack>
-  );
-}
-
-/**
- * A journal loading animation
- */
-function JournalLoading() {
-  return (
-    <Stack h="100vh" align="center" justify="center">
-      <Text size="xl">Loading journal...</Text>
-      <Loader color="blue" type="oval" size="xl" />
-    </Stack>
-  );
-}
-
 interface TitleRowProps {
   journalName: string;
   journalDescription?: string;
-  handleWithdrawJournal?: () => void;
+  handleWithdrawJournal: () => void;
 }
 
 /**
@@ -240,8 +219,8 @@ function TitleRow({
   journalDescription,
   handleWithdrawJournal,
 }: TitleRowProps) {
-  // Only show the withdraw button if handleWithdrawJournal is passed
-  const canWithdraw = handleWithdrawJournal !== undefined;
+  const [modalOpened, { open: openModal, close: closeModal }] =
+    useDisclosure(false);
 
   return (
     <Group justify="space-between" align="center">
@@ -253,13 +232,19 @@ function TitleRow({
         </Text>
       </Stack>
 
-      {canWithdraw && (
-        <Stack>
-          <Button variant="outline" color="red" onClick={handleWithdrawJournal}>
-            Withdraw Journal
-          </Button>
-        </Stack>
-      )}
+      <Stack>
+        <Button variant="outline" color="red" onClick={openModal}>
+          Withdraw Journal
+        </Button>
+      </Stack>
+
+      <ConfirmationModal
+        opened={modalOpened}
+        closeModal={closeModal}
+        action={handleWithdrawJournal}
+        infoText="Withdrawing a journal deletes all issues, papers, and reviews associated with the journal. This is a destructive action and cannot be undone!"
+        confirmationText={journalName} />
+
     </Group>
   );
 }
