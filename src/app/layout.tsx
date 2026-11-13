@@ -1,3 +1,5 @@
+// AI disclosure: the AuthProvider wrapper was added by Kai (Claude Code, Claude
+// Opus 5.5) on 2026-11-12 for issue #46. Prompt: "implement #46 frontend login".
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import {
@@ -6,6 +8,7 @@ import {
   mantineHtmlProps,
 } from "@mantine/core";
 import { theme } from "@/theme";
+import AuthProvider from "./AuthProvider";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "./globals.css";
@@ -37,7 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body>
         <MantineProvider theme={theme} defaultColorScheme="auto">
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </MantineProvider>
       </body>
     </html>

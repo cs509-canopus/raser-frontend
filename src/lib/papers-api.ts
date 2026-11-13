@@ -1,5 +1,8 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+// AI disclosure: request() was switched from fetch to the shared axios
+// instance by Kai (Claude Code, Claude Opus 5.5) on 2026-11-12 for issue #46,
+// so paper calls carry the login token. Prompt: "implement #46 frontend login".
+import axios from "axios";
+import { backend } from "@/axios-client";
 
 export interface AddedPaper {
   journalID: string;
@@ -43,16 +46,30 @@ export class PapersApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new PapersApiError(body.error ?? res.statusText, res.status);
+interface RequestOptions {
+  method?: string;
+  body?: string;
+}
+
+// Goes through the shared axios instance so the Cognito token gets attached.
+async function request<T>(path: string, init?: RequestOptions): Promise<T> {
+  try {
+    const res = await backend.request<T>({
+      url: path,
+      method: init?.method ?? "GET",
+      data: init?.body,
+    });
+    return res.data;
+  } catch (e) {
+    if (axios.isAxiosError(e) && e.response) {
+      const body = e.response.data as { error?: string } | undefined;
+      throw new PapersApiError(
+        body?.error ?? e.response.statusText,
+        e.response.status,
+      );
+    }
+    throw e;
   }
-  return res.json() as Promise<T>;
 }
 
 export interface AddPaperInput {
