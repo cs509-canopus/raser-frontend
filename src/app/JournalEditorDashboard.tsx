@@ -20,6 +20,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function JournalEditorDashboard() {
   return (
@@ -68,23 +69,20 @@ function JournalEditorView() {
   }, []);
 
   // add journal function for modal
-  async function addJournal(
-    name: string,
-    description?: string,
-    websiteURL?: string,
-    coverImageURL?: string,
-  ): Promise<string | undefined> {
+  async function addJournal(newJournal: NewJournal): Promise<string | undefined> {
     try {
       // journal add request
-      const req = await backend.post<Journal>(`/journals`, { name, description, websiteURL, coverImageURL });
+      const req = await backend.post<Journal>(`/journals`, newJournal);
 
       // add new journal to list
       setJournals((prev) => [...prev, {
-        id: req.data.journalID,
+        journalID: req.data.journalID,
         name: req.data.name,
         description: req.data.description,
         websiteUrl: req.data.websiteUrl,
-        coverImage: req.data.coverImageUrl,
+        coverImage: req.data.coverImage,
+        createdAt: req.data.createdAt,
+        issues: req.data.issues,
       }]);
     } catch (e) {
       if (e instanceof AxiosError && e.response) {
@@ -101,14 +99,14 @@ function JournalEditorView() {
     if (journal === null) return;
 
     backend
-      .post(`/journals/${journal.id}/withdraw`)
+      .post(`/journals/${journal.journalID}/withdraw`)
       .then(() => {
-        (setJournal((prev) => prev.filter((j) => j.id !== journal.id)),
+        setJournals((prev) => prev.filter((j) => j.journalID !== journal.journalID),);
           // Reload the page, which will bring them to JournalNotFound
-          window.location.reload());
+          // window.location.reload());
       })
       .catch((err) => {
-        console.log(`Error on POST /journals/${journal.id}/withdraw`, err);
+        console.log(`Error on POST /journals/${journal.journalID}/withdraw`, err);
       });
   }
 
@@ -133,7 +131,7 @@ function JournalEditorView() {
           <SimpleGrid cols={2} spacing="xs">
             {journals.map((journal) => (
               <JournalCard
-                key={journal.id}
+                key={journal.journalID}
                 journal={journal}
                 onSelect={onSelect}
                 onWithdraw={onWithdraw}
@@ -152,7 +150,7 @@ function JournalEditorView() {
     );
   }
 
-  function JournalCard({ journal, onSelect, onWithdraw }: JournalCardProps) {
+  function JournalCard({ journal, onWithdraw }: JournalCardProps) {
     // const issueCount = journal.issues.length;
     // TODO: only allow withdraws for journals with papers that have no reviewers assigned -> iteration 2
     const canWithdraw = true;
@@ -177,7 +175,7 @@ function JournalEditorView() {
             fullWidth
             className={styles.button}
             component={Link}
-            href={`/journals/?id=${journal.id}`}
+            href={`/journals/?id=${journal.journalID}`}
             w="100%"
           >
             Select
@@ -201,7 +199,7 @@ function JournalEditorView() {
     <Container className={styles.page} fluid>
       <Flex direction="column" gap="xs" w="100%">
         <Group justify="space-between">
-          <Stack mb="sm" spacing="xs">
+          <Stack mb="sm" gap="xs">
             <Title className={styles.title} order={1}>
               Your Journals
             </Title>
@@ -266,28 +264,28 @@ interface JournalCardProps {
 interface AddJournalModalProps {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => void;
+  onSubmit: (journal: NewJournal) => void;
 }
 
 // New journal interface
 interface NewJournal {
   name: string;
   description?: string;
-  websiteURL?: string;
-  coverImageURL?: string;
+  websiteUrl?: string;
+  coverImage?: string;
 }
 
 function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [websiteURL, setWebsiteURL] = useState("");
-  const [coverImageURL, setCoverImageURL] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [coverImage, setCoverImage] = useState("");
 
   const resetForm = () => {
     setName("");
     setDescription("");
-    setWebsiteURL("");
-    setCoverImageURL("");
+    setWebsiteUrl("");
+    setCoverImage("");
   };
 
   const handleClose = () => {
@@ -302,12 +300,14 @@ function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
     const nameTrimmed = name.trim();
     if (!nameTrimmed) return;
 
-    onSubmit(
-      nameTrimmed,
-      description.trim() || undefined,
-      websiteURL.trim() || undefined,
-      coverImageURL.trim() || undefined,
-    );
+    const newJournal = {
+      name: nameTrimmed,
+      description: description.trim() || undefined,
+      websiteUrl: websiteUrl.trim() || undefined,
+      coverImage: coverImage.trim() || undefined,
+    };
+
+    onSubmit(newJournal);
 
     resetForm();
     onClose();
@@ -343,14 +343,14 @@ function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
         <TextInput
           label="Website URL"
           placeholder="e.g. https://dl.acm.org/journal/tocs"
-          value={websiteURL}
-          onChange={(event) => setWebsiteURL(event.currentTarget.value)}
+          value={websiteUrl}
+          onChange={(event) => setWebsiteUrl(event.currentTarget.value)}
         />
         <TextInput
           label="Cover Image URL"
           placeholder="e.g. cover_image_url.png"
-          value={coverImageURL}
-          onChange={(event) => setCoverImageURL(event.currentTarget.value)}
+          value={coverImage}
+          onChange={(event) => setCoverImage(event.currentTarget.value)}
         />
         <Group justify="flex-end" gap="xs">
           <Button className={styles.buttonAlt} onClick={handleClose}>
