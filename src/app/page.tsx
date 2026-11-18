@@ -1,7 +1,4 @@
 "use client";
-// AI disclosure: the role-based default dashboard (useEffect below) was added by
-// Kai (Claude Code, Claude Opus 5.5) on 2026-11-12 for issue #46. Prompt:
-// "add an editor / rubric designer role choice at sign-up".
 import styles from "./page.module.css";
 import RubricDesignerDashboard from "./RubricDesignerDashboard";
 import JournalEditorDashboard from "./JournalEditorDashboard";

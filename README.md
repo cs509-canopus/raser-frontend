@@ -18,8 +18,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ### Environment variables and login
 
-<!-- AI disclosure: this section was written by Kai (Claude Code, Claude Opus 5.5) on 2026-11-12 for issue #46. -->
-
 Put these in `.env.local` (they're baked in at build time, so the deployed
 build needs them too):
 

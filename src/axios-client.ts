@@ -1,6 +1,3 @@
-// AI disclosure: the auth interceptors below were written by Kai (Claude Code,
-// Claude Opus 5.5) on 2026-11-12 for issue #46, prompt: "wire axios-client.ts
-// to attach the ID token via fetchAuthSession on every request". See PR.
 import axios from "axios";
 import { fetchAuthSession, signOut } from "aws-amplify/auth";
 

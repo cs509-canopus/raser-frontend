@@ -1,6 +1,3 @@
-// AI disclosure: request() was switched from fetch to the shared axios
-// instance by Kai (Claude Code, Claude Opus 5.5) on 2026-11-12 for issue #46,
-// so paper calls carry the login token. Prompt: "implement #46 frontend login".
 import axios from "axios";
 import { backend } from "@/axios-client";
 

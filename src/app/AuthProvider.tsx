@@ -1,7 +1,4 @@
 "use client";
-// AI disclosure: written by Kai (Claude Code, Claude Opus 5.5) on 2026-11-12 for
-// issue #46, prompt: "implement #46 frontend login with Amplify Auth, add a
-// logout button and a logged-out guard that redirects to /login". See PR.
 
 import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";

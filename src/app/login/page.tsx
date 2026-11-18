@@ -1,7 +1,4 @@
 "use client";
-// AI disclosure: written by Kai (Claude Code, Claude Opus 5.5) on 2026-11-12 for
-// issue #46, prompt: "build the login/sign-up page with Amplify's Authenticator
-// and add an editor / rubric designer role choice to sign-up". See PR.
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
