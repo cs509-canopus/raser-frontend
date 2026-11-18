@@ -9,6 +9,16 @@ import { Amplify } from "aws-amplify";
 import { Authenticator, useAuthenticator } from "@aws-amplify/ui-react";
 import { Button, Center, Group, Loader, Text } from "@mantine/core";
 
+// Without these nobody can log in, and every page just redirects to /login.
+if (
+  !process.env.NEXT_PUBLIC_USER_POOL_ID ||
+  !process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID
+) {
+  console.error(
+    "NEXT_PUBLIC_USER_POOL_ID / NEXT_PUBLIC_USER_POOL_CLIENT_ID are not set, so login won't work. See the README.",
+  );
+}
+
 // Runs once in the browser when this module loads, before anything below
 // calls Amplify. Tokens are kept in localStorage (Amplify's default).
 // User pool only, no identity pool: we only call our own API Gateway.

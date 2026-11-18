@@ -77,9 +77,7 @@ export async function signUpWithRole(input: SignUpInput) {
   const { [ROLE_FIELD]: role, ...userAttributes } =
     input.options?.userAttributes ?? {};
 
-  if (isSignUpRole(role)) savePendingRole(input.username, role);
-
-  return signUp({
+  const result = await signUp({
     ...input,
     options: {
       ...input.options,
@@ -90,4 +88,10 @@ export async function signUpWithRole(input: SignUpInput) {
       },
     },
   });
+
+  // only after Cognito accepted the sign-up, so a failed one (e.g. email
+  // already taken) doesn't overwrite the role saved for that email
+  if (isSignUpRole(role)) savePendingRole(input.username, role);
+
+  return result;
 }
