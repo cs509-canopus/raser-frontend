@@ -18,7 +18,9 @@ function RubricView() {
   const searchParams = useSearchParams();
   const rubricID = searchParams.get("id"); // string | null
 
-  const [rubricIsPublished, setRubricIsPublished] = useState<boolean | null>(null);
+  const [rubricIsPublished, setRubricIsPublished] = useState<boolean | null>(
+    null,
+  );
   const [fetchError, setFetchError] = useState("");
 
   // Retrieve rubric whenever rubricID changes
@@ -33,11 +35,11 @@ function RubricView() {
           setFetchError(error.data);
         }
         return;
-      };
+      }
 
       // Rubric is published if the publication date is not null
       setRubricIsPublished(result.publicationDate !== null);
-    }
+    };
 
     fetchRubric();
 
@@ -55,7 +57,7 @@ function RubricView() {
   if (fetchError !== "") {
     return (
       <div>
-        <h1>Failed to get rubric</h1> 
+        <h1>Failed to get rubric</h1>
       </div>
     );
   }
