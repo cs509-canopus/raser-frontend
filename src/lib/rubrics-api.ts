@@ -18,6 +18,8 @@ interface ListRubricsResponse {
     highQualityThreshold: number;
     lowQualityThreshold: number;
     questionCount: number;
+    publicationDate: Date | null;
+    replacedByID: string | null;
   }[];
 }
 
@@ -60,3 +62,17 @@ export async function getRubric(
 ): Promise<Result<GetRubricResponse>> {
   return request<GetRubricResponse>("GET", `/rubrics/${rubricID}`);
 }
+
+// Duplicate rubric
+
+export interface DuplicateRubricResponse {
+  rubricID: string;
+  generatedFrom: string;
+}
+
+export async function duplicateRubric(
+  rubricID: string,
+): Promise<Result<DuplicateRubricResponse>> {
+  return request<DuplicateRubricResponse>("POST", `/rubrics/${rubricID}/duplicate`);
+}
+

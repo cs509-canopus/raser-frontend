@@ -23,6 +23,19 @@ export interface Issue {
   papers: string[];
 }
 
+/**
+ * Rubric summary displayed on the rubric search page
+ */
+export interface Rubric {
+  rubricID: string;
+  title: string;
+  highQualityThreshold: number;
+  lowQualityThreshold: number;
+  questionCount: number;
+  publicationDate: Date | null;
+  replacedByID: string | null;
+}
+
 export interface ErrorResponse {
   error: string;
 }
