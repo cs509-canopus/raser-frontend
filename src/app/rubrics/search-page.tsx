@@ -17,6 +17,7 @@ import {
 import { DateInput } from "@mantine/dates";
 import { useEffect, useState } from "react";
 import type { Rubric } from "@/types";
+import classes from "./search-page.module.css";
 import {
   duplicateRubric,
   getRubric,
@@ -87,27 +88,21 @@ export function RubricSearchPage() {
   }, []);
 
   return (
-    // Fill the viewport so only the results list scrolls, not the page
-    <Container fluid h="100vh" py="md">
+    // Layout and responsive breakpoints are defined in search-page.module.css
+    <Container fluid py="md" className={classes.page}>
       <Stack h="100%">
         <Title>Browse Rubrics</Title>
-        <Group align="stretch" wrap="nowrap" style={{ flex: 1, minHeight: 0 }}>
-          <Paper
-            shadow="xs"
-            withBorder
-            p="lg"
-            w={350}
-            style={{ alignSelf: "flex-start", flexShrink: 0 }}
-          >
+        <div className={classes.body}>
+          <Paper shadow="xs" withBorder p="lg" className={classes.filters}>
             <FiltersPanel applyFilters={applyFilters} loading={loading} />
           </Paper>
-          <Stack style={{ flex: 1, minHeight: 0 }}>
+          <Stack className={classes.results}>
             <SearchBar value={searchQuery} onChange={setSearchQuery} />
-            <ScrollArea style={{ flex: 1, minHeight: 0 }} offsetScrollbars>
+            <ScrollArea className={classes.scrollArea} offsetScrollbars>
               <ResultsList rubrics={filteredRubrics} allRubrics={rubrics} />
             </ScrollArea>
           </Stack>
-        </Group>
+        </div>
       </Stack>
     </Container>
   );
