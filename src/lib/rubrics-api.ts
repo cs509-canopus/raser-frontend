@@ -2,7 +2,7 @@ import { request, type Result } from "./request";
 
 // List rubrics
 
-interface ListRubricsFilters {
+export interface ListRubricsFilters {
   deprecated?: boolean;
   publishedBefore?: Date;
   publishedAfter?: Date;

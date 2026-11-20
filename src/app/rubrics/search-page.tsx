@@ -16,9 +16,37 @@ import {
 import { DateInput } from "@mantine/dates";
 import { useEffect, useState } from "react";
 import type { Rubric } from "@/types";
-import { duplicateRubric, getRubric, listRubrics } from "@/lib/rubrics-api";
+import {
+  duplicateRubric,
+  getRubric,
+  listRubrics,
+  type ListRubricsFilters,
+} from "@/lib/rubrics-api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+/**
+ * Fetch rubrics with the given filters and convert them to `Rubric`s.
+ * Returns null on error.
+ */
+async function fetchRubrics(
+  filters: ListRubricsFilters,
+): Promise<Rubric[] | null> {
+  const { result, error } = await listRubrics(filters);
+  if (error) return null;
+
+  return result.rubrics.map((rubric) => ({
+    rubricID: rubric.id,
+    title: rubric.title,
+    highQualityThreshold: rubric.highQualityThreshold,
+    lowQualityThreshold: rubric.lowQualityThreshold,
+    questionCount: rubric.questionCount,
+    publicationDate: rubric.publicationDate
+      ? new Date(rubric.publicationDate)
+      : null,
+    replacedByID: rubric.replacedByID,
+  }));
+}
 
 export function RubricSearchPage() {
   // Full list of rubrics; filtering will be applied here before passing to ResultsList
@@ -31,31 +59,26 @@ export function RubricSearchPage() {
     rubric.title.toLowerCase().includes(normalizedQuery),
   );
 
-  // Fetch rubrics on mount
+  // Starts true because rubrics are fetched on mount
+  const [loading, setLoading] = useState(true);
+
+  // Re-fetch rubrics from the backend with the given filters
+  const applyFilters = async (filters: ListRubricsFilters) => {
+    setLoading(true);
+    const fetched = await fetchRubrics(filters);
+    if (fetched) setRubrics(fetched);
+    setLoading(false);
+  };
+
+  // Fetch all rubrics on mount
   useEffect(() => {
     let cancelled = false;
 
-    const fetchRubrics = async () => {
-      const { result, error } = await listRubrics({});
-      if (error || cancelled) return;
-
-      setRubrics(
-        result.rubrics.map((rubric) => ({
-          rubricID: rubric.id,
-          title: rubric.title,
-          highQualityThreshold: rubric.highQualityThreshold,
-          lowQualityThreshold: rubric.lowQualityThreshold,
-          questionCount: rubric.questionCount,
-          // JSON delivers dates as strings, so convert explicitly
-          publicationDate: rubric.publicationDate
-            ? new Date(rubric.publicationDate)
-            : null,
-          replacedByID: rubric.replacedByID,
-        })),
-      );
-    };
-
-    fetchRubrics();
+    fetchRubrics({}).then((fetched) => {
+      if (cancelled) return;
+      if (fetched) setRubrics(fetched);
+      setLoading(false);
+    });
 
     return () => {
       cancelled = true;
@@ -68,7 +91,7 @@ export function RubricSearchPage() {
         <Title>Browse Rubrics</Title>
         <Group align="flex-start">
           <Paper shadow="xs" withBorder p="lg" w={350}>
-            <FiltersPanel />
+            <FiltersPanel applyFilters={applyFilters} loading={loading} />
           </Paper>
           <Stack w="Reviewers" style={{ flex: 1 }}>
             <SearchBar value={searchQuery} onChange={setSearchQuery} />
@@ -82,11 +105,73 @@ export function RubricSearchPage() {
 
 type DeprecationStatus = "all" | "active" | "deprecated";
 
-function FiltersPanel({}) {
+interface FiltersPanelProps {
+  /** Called with the selected filters; the parent re-fetches rubrics */
+  applyFilters: (filters: ListRubricsFilters) => void;
+  /** Disables the buttons while a fetch is in progress */
+  loading: boolean;
+}
+
+/** Raw input values of the filters panel */
+interface FilterInputs {
+  publishedAfter: string | null;
+  publishedBefore: string | null;
+  deprecationStatus: DeprecationStatus;
+}
+
+const EMPTY_FILTER_INPUTS: FilterInputs = {
+  publishedAfter: null,
+  publishedBefore: null,
+  deprecationStatus: "all",
+};
+
+function filterInputsEqual(a: FilterInputs, b: FilterInputs): boolean {
+  return (
+    a.publishedAfter === b.publishedAfter &&
+    a.publishedBefore === b.publishedBefore &&
+    a.deprecationStatus === b.deprecationStatus
+  );
+}
+
+function FiltersPanel({ applyFilters, loading }: FiltersPanelProps) {
   const [publishedBefore, setPublishedBefore] = useState<string | null>(null);
   const [publishedAfter, setPublishedAfter] = useState<string | null>(null);
   const [deprecationStatus, setDeprecationStatus] =
     useState<DeprecationStatus>("all");
+  // Inputs as of the last apply/reset, used to detect unapplied changes
+  const [appliedInputs, setAppliedInputs] =
+    useState<FilterInputs>(EMPTY_FILTER_INPUTS);
+
+  const currentInputs: FilterInputs = {
+    publishedAfter,
+    publishedBefore,
+    deprecationStatus,
+  };
+  const hasUnappliedChanges = !filterInputsEqual(currentInputs, appliedInputs);
+  // Reset is allowed if either the inputs or the applied filters are non-empty
+  const canReset =
+    !filterInputsEqual(currentInputs, EMPTY_FILTER_INPUTS) ||
+    !filterInputsEqual(appliedInputs, EMPTY_FILTER_INPUTS);
+
+  const handleApply = () => {
+    setAppliedInputs(currentInputs);
+    applyFilters({
+      publishedAfter: publishedAfter ? new Date(publishedAfter) : undefined,
+      publishedBefore: publishedBefore ? new Date(publishedBefore) : undefined,
+      deprecated:
+        deprecationStatus === "all"
+          ? undefined
+          : deprecationStatus === "deprecated",
+    });
+  };
+
+  const handleReset = () => {
+    setPublishedBefore(null);
+    setPublishedAfter(null);
+    setDeprecationStatus("all");
+    setAppliedInputs(EMPTY_FILTER_INPUTS);
+    applyFilters({});
+  };
 
   return (
     <Stack>
@@ -94,16 +179,16 @@ function FiltersPanel({}) {
       <InputWrapper label="Publication date">
         <Group>
           <DateInput
-            value={publishedBefore}
-            onChange={setPublishedBefore}
+            value={publishedAfter}
+            onChange={setPublishedAfter}
             placeholder="From"
             valueFormat="YYYY-MM-DD"
             w={125}
             clearable
           />
           <DateInput
-            value={publishedAfter}
-            onChange={setPublishedAfter}
+            value={publishedBefore}
+            onChange={setPublishedBefore}
             placeholder="To"
             valueFormat="YYYY-MM-DD"
             w={125}
@@ -127,10 +212,20 @@ function FiltersPanel({}) {
         </div>
       </InputWrapper>
       <Group>
-        <Button variant="filled" color="dark">
+        <Button
+          variant="filled"
+          color="dark"
+          onClick={handleApply}
+          disabled={loading || !hasUnappliedChanges}
+        >
           Apply filters
         </Button>
-        <Button variant="outline" color="dark">
+        <Button
+          variant="outline"
+          color="dark"
+          onClick={handleReset}
+          disabled={loading || !canReset}
+        >
           Reset
         </Button>
       </Group>
