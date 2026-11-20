@@ -23,6 +23,13 @@ import { useRouter } from "next/navigation";
 export function RubricSearchPage() {
   // Full list of rubrics; filtering will be applied here before passing to ResultsList
   const [rubrics, setRubrics] = useState<Rubric[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Case-insensitive title match against the search query
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredRubrics = rubrics.filter((rubric) =>
+    rubric.title.toLowerCase().includes(normalizedQuery),
+  );
 
   // Fetch rubrics on mount
   useEffect(() => {
@@ -64,8 +71,8 @@ export function RubricSearchPage() {
             <FiltersPanel />
           </Paper>
           <Stack w="Reviewers" style={{ flex: 1 }}>
-            <SearchBar />
-            <ResultsList rubrics={rubrics} allRubrics={rubrics} />
+            <SearchBar value={searchQuery} onChange={setSearchQuery} />
+            <ResultsList rubrics={filteredRubrics} allRubrics={rubrics} />
           </Stack>
         </Group>
       </Stack>
@@ -131,13 +138,16 @@ function FiltersPanel({}) {
   );
 }
 
-function SearchBar({}) {
-  const [searchInput, setSearchInput] = useState("");
+interface SearchBarProps {
+  value: string;
+  onChange: (value: string) => void;
+}
 
+function SearchBar({ value, onChange }: SearchBarProps) {
   return (
     <TextInput
-      value={searchInput}
-      onChange={(event) => setSearchInput(event.currentTarget.value)}
+      value={value}
+      onChange={(event) => onChange(event.currentTarget.value)}
       radius="sm"
       placeholder="Search rubrics by title..."
     />
