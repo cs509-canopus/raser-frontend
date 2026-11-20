@@ -6,6 +6,7 @@ import {
   Container,
   Group,
   InputWrapper,
+  Loader,
   Paper,
   ScrollArea,
   SegmentedControl,
@@ -99,7 +100,14 @@ export function RubricSearchPage() {
           <Stack className={classes.results}>
             <SearchBar value={searchQuery} onChange={setSearchQuery} />
             <ScrollArea className={classes.scrollArea} offsetScrollbars>
-              <ResultsList rubrics={filteredRubrics} allRubrics={rubrics} />
+              {loading ? (
+                <Stack align="center" justify="center" py="xl">
+                  <Text size="xl">Loading rubrics...</Text>
+                  <Loader color="blue" type="oval" size="xl" />
+                </Stack>
+              ) : (
+                <ResultsList rubrics={filteredRubrics} allRubrics={rubrics} />
+              )}
             </ScrollArea>
           </Stack>
         </div>
