@@ -22,6 +22,7 @@ import { NotFoundPage } from "@/components/NotFoundPage";
 import { getJournal, withdrawJournal } from "@/lib/journals-api";
 import { createIssue, deleteIssue, getIssue } from "@/lib/issues-api";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import router from "next/router";
 
 export default function JournalsPage() {
   return (
@@ -95,14 +96,14 @@ function JournalView() {
 
     const result = await withdrawJournal(journalID);
     if (result.error) {
-      console.warn(`Error withdrawing journal ${journalID}: ${error}`);
+      console.warn(`Error withdrawing journal ${journalID}: ${result.error}`);
       return;
     }
 
     setJournal(null);
 
     // Redirect to dashboard
-    window.location.href = "/";
+    router.push("/");
   }
 
   async function handleCreateIssue(
@@ -243,8 +244,8 @@ function TitleRow({
         closeModal={closeModal}
         action={handleWithdrawJournal}
         infoText="Withdrawing a journal deletes all issues, papers, and reviews associated with the journal. This is a destructive action and cannot be undone!"
-        confirmationText={journalName} />
-
+        confirmationText={journalName}
+      />
     </Group>
   );
 }

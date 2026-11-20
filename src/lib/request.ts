@@ -53,14 +53,14 @@ export async function request<T>(
       return {
         error: {
           statusCode: err.response.status,
-          data: err.response.data,
+          data: err.response.data?.error ?? err.message,
         },
       };
     }
 
     return {
       error: {
-        cause: "getJournal",
+        cause: `${method} ${path}`,
       },
     };
   }

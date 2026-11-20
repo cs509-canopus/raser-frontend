@@ -38,8 +38,8 @@ export function ConfirmationModal({
   const [inputText, setInputText] = useState("");
 
   const canClickDelete =
-    confirmationText === undefined ||
-    (inputText === confirmationText && !actionIsInProgress);
+    !actionIsInProgress &&
+    (confirmationText === undefined || inputText === confirmationText);
 
   return (
     <Modal
