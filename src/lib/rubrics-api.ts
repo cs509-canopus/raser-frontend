@@ -1,5 +1,40 @@
 import { request, type Result } from "./request";
 
+// List rubrics
+
+interface ListRubricsFilters {
+  deprecated?: boolean;
+  publishedBefore?: Date;
+  publishedAfter?: Date;
+}
+
+interface ListRubricsResponse {
+  deprecated?: boolean;
+  publishedBefore?: string;
+  publishedAfter?: string;
+  rubrics: {
+    id: string;
+    title: string;
+    highQualityThreshold: number;
+    lowQualityThreshold: number;
+    questionCount: number;
+  }[];
+}
+
+export async function listRubrics({
+  deprecated,
+  publishedBefore,
+  publishedAfter,
+}: ListRubricsFilters): Promise<Result<ListRubricsResponse>> {
+  return request<ListRubricsResponse>("GET", "/rubrics", {
+    queryParams: {
+      deprecated,
+      publishedBefore: publishedBefore?.toISOString(),
+      publishedAfter: publishedAfter?.toISOString(),
+    },
+  });
+}
+
 // Get rubric
 
 interface GetRubricResponse {
@@ -25,5 +60,3 @@ export async function getRubric(
 ): Promise<Result<GetRubricResponse>> {
   return request<GetRubricResponse>("GET", `/rubrics/${rubricID}`);
 }
-
-
