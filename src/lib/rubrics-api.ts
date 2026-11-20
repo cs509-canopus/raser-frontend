@@ -73,6 +73,8 @@ export interface DuplicateRubricResponse {
 export async function duplicateRubric(
   rubricID: string,
 ): Promise<Result<DuplicateRubricResponse>> {
-  return request<DuplicateRubricResponse>("POST", `/rubrics/${rubricID}/duplicate`);
+  return request<DuplicateRubricResponse>(
+    "POST",
+    `/rubrics/${rubricID}/duplicate`,
+  );
 }
-
