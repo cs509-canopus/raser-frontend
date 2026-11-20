@@ -7,6 +7,7 @@ import {
   Group,
   InputWrapper,
   Paper,
+  ScrollArea,
   SegmentedControl,
   Stack,
   TextInput,
@@ -86,16 +87,25 @@ export function RubricSearchPage() {
   }, []);
 
   return (
-    <Container fluid>
-      <Stack>
+    // Fill the viewport so only the results list scrolls, not the page
+    <Container fluid h="100vh" py="md">
+      <Stack h="100%">
         <Title>Browse Rubrics</Title>
-        <Group align="flex-start">
-          <Paper shadow="xs" withBorder p="lg" w={350}>
+        <Group align="stretch" wrap="nowrap" style={{ flex: 1, minHeight: 0 }}>
+          <Paper
+            shadow="xs"
+            withBorder
+            p="lg"
+            w={350}
+            style={{ alignSelf: "flex-start", flexShrink: 0 }}
+          >
             <FiltersPanel applyFilters={applyFilters} loading={loading} />
           </Paper>
-          <Stack w="Reviewers" style={{ flex: 1 }}>
+          <Stack style={{ flex: 1, minHeight: 0 }}>
             <SearchBar value={searchQuery} onChange={setSearchQuery} />
-            <ResultsList rubrics={filteredRubrics} allRubrics={rubrics} />
+            <ScrollArea style={{ flex: 1, minHeight: 0 }} offsetScrollbars>
+              <ResultsList rubrics={filteredRubrics} allRubrics={rubrics} />
+            </ScrollArea>
           </Stack>
         </Group>
       </Stack>
@@ -258,7 +268,8 @@ interface ResultsListProps {
 
 function ResultsList({ rubrics, allRubrics }: ResultsListProps) {
   return (
-    <Stack>
+    // Small padding so card borders/shadows aren't clipped by the scroll area
+    <Stack p={2}>
       {rubrics.map((rubric) => (
         <Card key={rubric.rubricID} shadow="xs" withBorder padding="lg">
           <ResultItem rubric={rubric} allRubrics={allRubrics} />
