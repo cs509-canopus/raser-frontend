@@ -1,0 +1,47 @@
+/* Desktop: fill the viewport so only the results list scrolls */
+.page {
+  height: 100vh;
+}
+
+.body {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--mantine-spacing-md);
+  flex: 1;
+  min-height: 0;
+}
+
+.filters {
+  width: 350px;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.results {
+  flex: 1;
+  min-height: 0;
+}
+
+/* minHeight: 0 lets the scroll area shrink to the remaining space */
+.scrollArea {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Mobile (below Mantine's "sm" breakpoint): stack filters, search, results
+   vertically and let the whole page scroll instead of the results list */
+@media (max-width: 48em) {
+  .page {
+    height: auto;
+  }
+
+  .body {
+    flex-direction: column;
+  }
+
+  .filters {
+    width: 100%;
+    align-self: stretch;
+  }
+}
