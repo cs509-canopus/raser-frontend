@@ -3,11 +3,21 @@ import styles from "./page.module.css";
 import RubricDesignerDashboard from "./RubricDesignerDashboard";
 import JournalEditorDashboard from "./JournalEditorDashboard";
 import RootLayout from "./layout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCurrentUserRole } from "@/lib/auth/role";
 import { Button, Flex } from "@mantine/core";
 
 export default function Home() {
   const [isRubricEditor, setIsRubricEditor] = useState(true);
+
+  // open the dashboard for the role picked at sign-up (buttons still switch)
+  useEffect(() => {
+    getCurrentUserRole()
+      .then((role) => {
+        if (role) setIsRubricEditor(role === "rubric_designer");
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className={styles.page}>

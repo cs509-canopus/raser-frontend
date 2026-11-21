@@ -6,6 +6,7 @@ import {
   mantineHtmlProps,
 } from "@mantine/core";
 import { theme } from "@/theme";
+import AuthProvider from "./AuthProvider";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "./globals.css";
@@ -37,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body>
         <MantineProvider theme={theme} defaultColorScheme="auto">
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </MantineProvider>
       </body>
     </html>
