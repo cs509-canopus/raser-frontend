@@ -4,7 +4,8 @@ import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Amplify } from "aws-amplify";
 import { Authenticator, useAuthenticator } from "@aws-amplify/ui-react";
-import { Button, Center, Group, Loader, Text } from "@mantine/core";
+import { Center, Loader } from "@mantine/core";
+import HeaderBar from "@/components/HeaderBar";
 
 // Without these nobody can log in, and every page just redirects to /login.
 if (
@@ -37,7 +38,7 @@ function isLoginPath(pathname: string | null) {
 
 /**
  * Wraps the whole app. Shares one Amplify auth state with every page, sends
- * logged-out users to /login, and shows a sign-out bar when logged in.
+ * logged-out users to /login, and shows the header bar when logged in.
  */
 export default function AuthProvider({ children }: { children: ReactNode }) {
   return (
@@ -72,24 +73,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <AccountBar />
+      <HeaderBar />
       {children}
     </>
-  );
-}
-
-function AccountBar() {
-  const { user, signOut } = useAuthenticator((ctx) => [ctx.user]);
-  const email = user?.signInDetails?.loginId ?? user?.username;
-
-  return (
-    <Group justify="flex-end" gap="sm" px="md" py="xs">
-      <Text size="sm" c="dimmed">
-        {email}
-      </Text>
-      <Button size="xs" variant="default" onClick={signOut}>
-        Sign out
-      </Button>
-    </Group>
   );
 }
