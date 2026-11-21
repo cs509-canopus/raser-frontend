@@ -77,7 +77,9 @@ export function getIssue(issueId: string): Promise<IssueView> {
 }
 
 export function deleteIssue(issueId: string): Promise<IssueView> {
-  return request<{ issueID: string }>(`/issues/${issueId}`, { method: "DELETE"});
+  return request<{ issueID: string }>(`/issues/${issueId}`, {
+    method: "DELETE",
+  });
 }
 
 export function getPaper(paperId: string): Promise<PaperView> {
