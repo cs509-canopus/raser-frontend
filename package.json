@@ -12,6 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-amplify/ui-react": "^6.15.7",
     "@mantine/carousel": "^9.7.3",
     "@mantine/charts": "^9.7.3",
     "@mantine/code-highlight": "^9.7.3",
@@ -30,6 +31,7 @@
     "@tiptap/pm": "^3.32.0",
     "@tiptap/react": "^3.32.0",
     "@tiptap/starter-kit": "^3.32.0",
+    "aws-amplify": "^6.22.2",
     "axios": "^1.21.0",
     "dayjs": "^1.11.23",
     "dotenv": "^18.0.9",
