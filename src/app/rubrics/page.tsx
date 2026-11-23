@@ -11,21 +11,29 @@ import { FullRubric } from "@/types";
 export default function RubricPage() {
   return (
     <Suspense fallback={<p>Loading...</p>}>
-      <RubricView />
+      <RubricRouter />
     </Suspense>
   );
 }
 
-function RubricView() {
+function RubricRouter() {
   const searchParams = useSearchParams();
-  const rubricID = searchParams.get("id"); // string | null
+  const rubricID = searchParams.get("id"); // string |
+  // No ID provided: show search page
+  if (rubricID === null) {
+    return <RubricSearchPage />;
+  }
 
+  // Keyed by ID so all fetch state resets whenever the ID changes
+  return <RubricView key={rubricID} rubricID={rubricID} />;
+}
+
+function RubricView({ rubricID }: { rubricID: string }) {
   const [rubric, setRubric] = useState<FullRubric | null>(null);
   const [fetchError, setFetchError] = useState("");
 
   // Retrieve rubric whenever rubricID changes
   useEffect(() => {
-    if (!rubricID) return;
     let cancelled = false;
 
     const fetchRubric = async () => {
@@ -37,6 +45,7 @@ function RubricView() {
         return;
       }
 
+      if (cancelled) return;
       setRubric({
         rubricID: result.rubricID,
         designerID: result.designerID,
@@ -60,11 +69,6 @@ function RubricView() {
       cancelled = true;
     };
   }, [rubricID]);
-
-  // No ID provided: show search page
-  if (rubricID === null) {
-    return <RubricSearchPage />;
-  }
 
   // Show error page if getRubric failed
   if (fetchError !== "") {

@@ -1,6 +1,5 @@
 import {
   Anchor,
-  Badge,
   Button,
   Card,
   Container,
