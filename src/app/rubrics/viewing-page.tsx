@@ -1,5 +1,5 @@
 import { RubricStatusBubble } from "@/components/RubricStatusBubble";
-import { FullRubric } from "@/types";
+import { FullRubric, RubricQuestion } from "@/types";
 import {
   Anchor,
   Breadcrumbs,
@@ -14,6 +14,14 @@ import {
   Badge,
 } from "@mantine/core";
 
+const sectionTitles = [
+  "Section 1 - Introduction",
+  "Section 2 - Materials & Sourcing",
+  "Section 3 - Methodology & Reproducibility",
+  "Section 4 - Replication, Risk of Bias & Statistics",
+  "Section 5 - Reporting & Transparency",
+];
+
 interface RubricViewingPageProps {
   rubric: FullRubric;
 }
@@ -21,7 +29,7 @@ interface RubricViewingPageProps {
 export function RubricViewingPage({ rubric }: RubricViewingPageProps) {
   const stats: Stat[] = [
     {
-      label: "Low Quality Threshould",
+      label: "Low Quality Threshold",
       value: rubric.lowQualityThreshold,
     },
     {
@@ -52,16 +60,22 @@ export function RubricViewingPage({ rubric }: RubricViewingPageProps) {
         <TitleRow rubric={rubric} />
         <StatsRow stats={stats} />
         <ReadOnlyNotice />
-        <Paper shadow="sm" withBorder p="lg">
-          <Section />
-        </Paper>
+        {sectionTitles.map((title, idx) => (
+          <Paper key={idx} shadow="sm" withBorder p="lg">
+            <Section
+              title={title}
+              questions={rubric.questions.filter((q) => q.section === idx + 1)}
+            />
+          </Paper>
+        ))}
       </Stack>
     </Container>
   );
 }
 
 function TitleRow({ rubric }: { rubric: FullRubric }) {
-  const rubricStatus = rubric.replacedByID !== null ? "deprecated" : "published";
+  const rubricStatus =
+    rubric.replacedByID !== null ? "deprecated" : "published";
 
   return (
     <Group justify="space-between">
@@ -119,61 +133,97 @@ function ReadOnlyNotice() {
   );
 }
 
-function Section() {
-  const questions = [<Question key={0} />, <Question key={1} />];
+interface SectionProps {
+  title: string;
+  questions: RubricQuestion[];
+}
+
+function Section({ title, questions }: SectionProps) {
+  const sortedQuestions = [...questions].sort((a, b) => a.index - b.index);
 
   return (
     <Stack>
       <Group>
-        <Title order={4}>Section 1</Title>
+        <Title order={4}>{title}</Title>
         <Badge color="gray" variant="light">
-          2 questions
+          {questions.length} {questions.length === 1 ? "question" : "questions"}
         </Badge>
       </Group>
-      {questions}
+      {sortedQuestions.length === 0 ? (
+        <Text c="dimmed">No questions</Text>
+      ) : (
+        sortedQuestions.map((question, idx) => (
+          <Question key={idx} number={idx + 1} question={question} />
+        ))
+      )}
     </Stack>
   );
 }
 
-function Question() {
+interface ScoreExplanation {
+  score: string;
+  explanation: string;
+}
+
+/**
+ * Parses a score explanation string of the form
+ * "5 = explanation; 4 = explanation; ... 1 = explanation".
+ * Returns null if the string does not match this format.
+ */
+function parseScoreExplanations(
+  text: string | null,
+): ScoreExplanation[] | null {
+  if (text === null) return null;
+
+  const parts = text
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part !== "");
+
+  const expectedScores = ["5", "4", "3", "2", "1"];
+  if (parts.length !== expectedScores.length) return null;
+
+  const parsed: ScoreExplanation[] = [];
+  for (let i = 0; i < parts.length; i++) {
+    const match = parts[i].match(/^(\d+)\s*=\s*(.+)$/);
+    if (match === null || match[1] !== expectedScores[i]) return null;
+    parsed.push({ score: match[1], explanation: match[2].trim() });
+  }
+  return parsed;
+}
+
+interface QuestionProps {
+  number: number;
+  question: RubricQuestion;
+}
+
+function Question({ number, question }: QuestionProps) {
+  const scoreExplanations = parseScoreExplanations(question.scoreExplanations);
+
   return (
     <Stack>
       <Group gap="xs">
-        <Text c="gray">1.</Text>
-        <Text>Is the hypothesis clearly stated and testable?</Text>
+        <Text c="gray">{number}.</Text>
+        <Text>{question.question}</Text>
       </Group>
-      <Group grow align="stretch">
+      {scoreExplanations !== null ? (
+        <Group grow align="stretch">
+          {scoreExplanations.map(({ score, explanation }) => (
+            <Card key={score} bg="gray.1">
+              <Title order={5}>{score}</Title>
+              <Text size="sm" c="gray.7">
+                {explanation}
+              </Text>
+            </Card>
+          ))}
+        </Group>
+      ) : (
         <Card bg="gray.1">
-          <Title order={5}>5</Title>
           <Text size="sm" c="gray.7">
-            Clear, specific, and testable
+            {question.scoreExplanations}
           </Text>
         </Card>
-        <Card bg="gray.1">
-          <Title order={5}>4</Title>
-          <Text size="sm" c="gray.7">
-            Clear but could be more specific
-          </Text>
-        </Card>
-        <Card bg="gray.1">
-          <Title order={5}>3</Title>
-          <Text size="sm" c="gray.7">
-            Stated but vague
-          </Text>
-        </Card>
-        <Card bg="gray.1">
-          <Title order={5}>2</Title>
-          <Text size="sm" c="gray.7">
-            Only implied
-          </Text>
-        </Card>
-        <Card bg="gray.1">
-          <Title order={5}>1</Title>
-          <Text size="sm" c="gray.7">
-            Missing
-          </Text>
-        </Card>
-      </Group>
+      )}
     </Stack>
   );
 }
