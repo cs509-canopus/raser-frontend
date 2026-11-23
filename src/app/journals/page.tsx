@@ -224,7 +224,7 @@ function TitleRow({
     useDisclosure(false);
 
   return (
-    <Group justify="space-between" align="center">
+    <Group justify="space-between" align="center" wrap="nowrap">
       <Stack gap={4}>
         <Title order={2}>{journalName}</Title>
         <Text size="sm" c="dimmed">
@@ -233,11 +233,9 @@ function TitleRow({
         </Text>
       </Stack>
 
-      <Stack>
-        <Button variant="outline" color="red" onClick={openModal}>
-          Withdraw Journal
-        </Button>
-      </Stack>
+      <Button variant="outline" color="red" miw="fit-content" onClick={openModal}>
+        Withdraw Journal
+      </Button>
 
       <ConfirmationModal
         opened={modalOpened}
@@ -262,9 +260,9 @@ function CreateIssue({
   ) => Promise<string | undefined>;
 }) {
   const [volumeNumberValue, setVolumeNumberValue] = useState<number | string>(
-    0,
+    1,
   );
-  const [issueNumberValue, setIssueNumberValue] = useState<number | string>(0);
+  const [issueNumberValue, setIssueNumberValue] = useState<number | string>(1);
   const [inputError, setInputError] = useState<string>("");
   const [isCreating, setIsCreating] = useState(false);
 
@@ -304,7 +302,7 @@ function CreateIssue({
             radius="sm"
             label="Volume"
             withAsterisk
-            min={0}
+            min={1}
             value={volumeNumberValue}
             onChange={setVolumeNumberValue}
           />
@@ -312,7 +310,7 @@ function CreateIssue({
             radius="sm"
             label="Issue"
             withAsterisk
-            min={0}
+            min={1}
             value={issueNumberValue}
             onChange={setIssueNumberValue}
           />
