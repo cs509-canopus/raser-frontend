@@ -19,7 +19,25 @@ interface RubricViewingPageProps {
 }
 
 export function RubricViewingPage({ rubric }: RubricViewingPageProps) {
-  // TODO: pass in rubric (already did fetch)
+  const stats: Stat[] = [
+    {
+      label: "Low Quality Threshould",
+      value: rubric.lowQualityThreshold,
+    },
+    {
+      label: "High Quality Threshold",
+      value: rubric.highQualityThreshold,
+    },
+    {
+      label: "Questions",
+      value: rubric.questions.length,
+    },
+    {
+      label: "Deprecated",
+      value: rubric.replacedByID !== null ? "Yes" : "No",
+    },
+  ];
+
   return (
     <Container fluid py="md">
       <Stack gap="xl">
@@ -31,8 +49,8 @@ export function RubricViewingPage({ rubric }: RubricViewingPageProps) {
             Rubric Title
           </Anchor>
         </Breadcrumbs>
-        <TitleRow />
-        <StatsRow />
+        <TitleRow rubric={rubric} />
+        <StatsRow stats={stats} />
         <ReadOnlyNotice />
         <Paper shadow="sm" withBorder p="lg">
           <Section />
@@ -42,17 +60,20 @@ export function RubricViewingPage({ rubric }: RubricViewingPageProps) {
   );
 }
 
-function TitleRow() {
+function TitleRow({ rubric }: { rubric: FullRubric }) {
+  const rubricStatus = rubric.replacedByID !== null ? "deprecated" : "published";
+
   return (
     <Group justify="space-between">
       <Stack gap="xs">
         <Group>
-          <Title>Rubric title</Title>
-          <RubricStatusBubble status="published" />
+          <Title>{rubric.title}</Title>
+          <RubricStatusBubble status={rubricStatus} />
           <RubricStatusBubble status="readonly" />
         </Group>
         <Text size="sm" c="dimmed">
-          Designed by you (email) - Published (publication-date)
+          Designed by {rubric.designerID} - Published{" "}
+          {rubric.publicationDate?.toLocaleDateString()}
         </Text>
       </Stack>
       <Group>
@@ -67,27 +88,12 @@ function TitleRow() {
   );
 }
 
-function StatsRow() {
-  // TODO: this list should be passed in from parent
-  const stats = [
-    {
-      label: "Low Quality Threshould",
-      value: 40,
-    },
-    {
-      label: "High Quality Threshould",
-      value: 65,
-    },
-    {
-      label: "Questions",
-      value: 8,
-    },
-    {
-      label: "Deprecated",
-      value: "No",
-    },
-  ];
+interface Stat {
+  label: string;
+  value: string | number;
+}
 
+function StatsRow({ stats }: { stats: Stat[] }) {
   const statCards = stats.map((stat, idx) => (
     <Card key={idx} withBorder shadow="xs" h="100%">
       <Text size="xs" c="dimmed" fw={700} tt="uppercase">
