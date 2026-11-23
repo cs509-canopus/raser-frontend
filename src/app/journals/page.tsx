@@ -234,7 +234,12 @@ function TitleRow({
         </Text>
       </Stack>
 
-      <Button variant="outline" color="red" miw="fit-content" onClick={openModal}>
+      <Button
+        variant="outline"
+        color="red"
+        miw="fit-content"
+        onClick={openModal}
+      >
         Withdraw Journal
       </Button>
 
@@ -356,12 +361,17 @@ function IssueTable({ issues, handleDeleteIssue }: IssueTableProps) {
 
   return (
     <Table>
-      <Table.Thead>
+      <Table.Thead
+        style={{
+          backgroundColor:
+            "light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6))",
+        }}
+      >
         <Table.Tr>
           <Table.Th>Issue</Table.Th>
-          <Table.Th ta="center">Papers</Table.Th>
-          <Table.Th ta="center">Reviewers Assigned</Table.Th>
-          <Table.Th ta="center">Status</Table.Th>
+          <Table.Th ta="left">Papers</Table.Th>
+          <Table.Th ta="left">Reviewers Assigned</Table.Th>
+          <Table.Th ta="left">Status</Table.Th>
           <Table.Th ta="right">Actions</Table.Th>
         </Table.Tr>
       </Table.Thead>
@@ -388,17 +398,19 @@ function IssueTableRow({
   }
 
   // TODO: update to include under-review and reviews-done status
-  const issueStatus = issue.papers.length === 0 ? "no-papers" 
-    : "awaiting-reviewers";
+  const issueStatus =
+    issue.papers.length === 0 ? "no-papers" : "awaiting-reviewers";
 
   return (
     <Table.Tr key={issue.issueID}>
       <Table.Td>
         Vol. {issue.volumeNumber}, No. {issue.issueNumber}
       </Table.Td>
-      <Table.Td ta="center">{issue.papers.length}</Table.Td>
-      <Table.Td ta="center">0</Table.Td>
-      <Table.Td ta="center"><IssueStatusBubble status={issueStatus} /></Table.Td>
+      <Table.Td ta="left">{issue.papers.length}</Table.Td>
+      <Table.Td ta="left">0</Table.Td>
+      <Table.Td ta="left">
+        <IssueStatusBubble status={issueStatus} />
+      </Table.Td>
       <Table.Td ta="right">
         <Group justify="flex-end">
           <Button
@@ -424,9 +436,10 @@ function IssueTableRow({
 }
 
 function IssueStatusBubble({
-  status
+  status,
 }: {
-  status: "no-papers" | "awaiting-reviewers" | "under-review" | "reviews-done" | null,
+  status:
+    "no-papers" | "awaiting-reviewers" | "under-review" | "reviews-done" | null;
 }) {
   switch (status) {
     case "no-papers":
@@ -457,4 +470,3 @@ function IssueStatusBubble({
       return <></>;
   }
 }
-
