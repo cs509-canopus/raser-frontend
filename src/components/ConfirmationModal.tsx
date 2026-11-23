@@ -8,8 +8,9 @@ interface ConfirmationModalProps {
   /** Called when the modal is closed */
   closeModal: () => void;
 
-  /** Function to execute on confirmation */
-  action: () => void;
+  /** Function to execute on confirmation. If it returns a promise, the modal
+   * waits for it to settle before allowing another confirmation. */
+  action: () => void | Promise<void>;
 
   /** Informational text about the consequences of taking this action */
   infoText?: string;
@@ -18,6 +19,12 @@ interface ConfirmationModalProps {
    * If provided, the user must enter this text exactly in order to confirm the action.
    */
   confirmationText?: string;
+
+  /** Extra content shown above the confirmation input */
+  children?: React.ReactNode;
+
+  /** Additional condition that must be true for the action to be confirmed */
+  canConfirm?: boolean;
 }
 
 /**
@@ -33,11 +40,14 @@ export function ConfirmationModal({
   action,
   infoText,
   confirmationText,
+  children,
+  canConfirm = true,
 }: ConfirmationModalProps) {
   const [actionIsInProgress, setActionIsInProgress] = useState(false);
   const [inputText, setInputText] = useState("");
 
   const canClickDelete =
+    canConfirm &&
     !actionIsInProgress &&
     (confirmationText === undefined || inputText === confirmationText);
 
@@ -50,6 +60,7 @@ export function ConfirmationModal({
     >
       <Stack>
         {infoText && <Text fw="bold">{infoText}</Text>}
+        {children}
         {confirmationText && (
           <TextInput
             label={`Enter "${confirmationText}" below to proceed`}
@@ -62,9 +73,13 @@ export function ConfirmationModal({
         <Button
           variant="filled"
           color="red"
-          onClick={() => {
-            action();
+          onClick={async () => {
             setActionIsInProgress(true);
+            try {
+              await action();
+            } finally {
+              setActionIsInProgress(false);
+            }
           }}
           disabled={!canClickDelete}
         >

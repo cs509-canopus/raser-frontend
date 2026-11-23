@@ -1,5 +1,14 @@
 import { RubricStatusBubble } from "@/components/RubricStatusBubble";
-import { FullRubric, RubricQuestion } from "@/types";
+import { FullRubric, Rubric, RubricQuestion } from "@/types";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
+import {
+  deprecateRubric,
+  duplicateRubric,
+  listRubrics,
+} from "@/lib/rubrics-api";
+import { useDisclosure } from "@mantine/hooks";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Anchor,
   Breadcrumbs,
@@ -12,6 +21,7 @@ import {
   Card,
   Paper,
   Badge,
+  Select,
 } from "@mantine/core";
 
 const sectionTitles = [
@@ -26,7 +36,12 @@ interface RubricViewingPageProps {
   rubric: FullRubric;
 }
 
-export function RubricViewingPage({ rubric }: RubricViewingPageProps) {
+export function RubricViewingPage({
+  rubric: initialRubric,
+}: RubricViewingPageProps) {
+  // Local copy so the page can reflect changes (e.g. deprecation) without refetching
+  const [rubric, setRubric] = useState(initialRubric);
+
   const stats: Stat[] = [
     {
       label: "Low Quality Threshold",
@@ -57,7 +72,12 @@ export function RubricViewingPage({ rubric }: RubricViewingPageProps) {
             Rubric Title
           </Anchor>
         </Breadcrumbs>
-        <TitleRow rubric={rubric} />
+        <TitleRow
+          rubric={rubric}
+          onDeprecated={(replacementID) =>
+            setRubric((prev) => ({ ...prev, replacedByID: replacementID }))
+          }
+        />
         <StatsRow stats={stats} />
         <ReadOnlyNotice />
         {sectionTitles.map((title, idx) => (
@@ -73,9 +93,86 @@ export function RubricViewingPage({ rubric }: RubricViewingPageProps) {
   );
 }
 
-function TitleRow({ rubric }: { rubric: FullRubric }) {
-  const rubricStatus =
-    rubric.replacedByID !== null ? "deprecated" : "published";
+interface TitleRowProps {
+  rubric: FullRubric;
+  /** Called with the replacement rubric's ID after the rubric is deprecated */
+  onDeprecated: (replacementID: string) => void;
+}
+
+function TitleRow({ rubric, onDeprecated }: TitleRowProps) {
+  const router = useRouter();
+  const [duplicateInProgress, setDuplicateInProgress] = useState(false);
+  const [deprecateInProgress, setDeprecateInProgress] = useState(false);
+  const [modalOpened, { open: openModal, close: closeModal }] =
+    useDisclosure(false);
+  const [replacementOptions, setReplacementOptions] = useState<Rubric[]>([]);
+  const [replacementID, setReplacementID] = useState<string | null>(null);
+  const [errorText, setErrorText] = useState("");
+
+  const isDeprecated = rubric.replacedByID !== null;
+  const rubricStatus = isDeprecated ? "deprecated" : "published";
+
+  // Load candidate replacement rubrics (published, not deprecated, not this one)
+  // when the deprecate modal is opened
+  useEffect(() => {
+    if (!modalOpened) return;
+    let cancelled = false;
+
+    const fetchOptions = async () => {
+      const { result, error } = await listRubrics({ deprecated: false });
+      if (cancelled) return;
+      if (error) {
+        setErrorText("Failed to load replacement rubrics");
+        return;
+      }
+      setReplacementOptions(
+        result.rubrics
+          .filter((r) => r.publicationDate !== null && r.id !== rubric.rubricID)
+          .map((r) => ({
+            rubricID: r.id,
+            title: r.title,
+            highQualityThreshold: r.highQualityThreshold,
+            lowQualityThreshold: r.lowQualityThreshold,
+            questionCount: r.questionCount,
+            publicationDate: r.publicationDate,
+            replacedByID: r.replacedByID,
+          })),
+      );
+    };
+
+    fetchOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modalOpened, rubric.rubricID]);
+
+  const handleDuplicate = async () => {
+    setDuplicateInProgress(true);
+    setErrorText("");
+    const { result, error } = await duplicateRubric(rubric.rubricID);
+    if (error) {
+      setErrorText("Failed to duplicate rubric");
+      setDuplicateInProgress(false);
+      return;
+    }
+    // Leave the button disabled while navigating to the new draft
+    router.push(`/rubrics?id=${result.rubricID}`);
+  };
+
+  const handleDeprecate = async () => {
+    if (replacementID === null) return;
+    setDeprecateInProgress(true);
+    setErrorText("");
+    const { error } = await deprecateRubric(rubric.rubricID, replacementID);
+    setDeprecateInProgress(false);
+    if (error) {
+      setErrorText("Failed to deprecate rubric");
+      return;
+    }
+    closeModal();
+    onDeprecated(replacementID);
+  };
 
   return (
     <Group justify="space-between">
@@ -89,15 +186,53 @@ function TitleRow({ rubric }: { rubric: FullRubric }) {
           Designed by {rubric.designerID} - Published{" "}
           {rubric.publicationDate?.toLocaleDateString()}
         </Text>
+        {errorText && (
+          <Text size="sm" c="red">
+            {errorText}
+          </Text>
+        )}
       </Stack>
       <Group>
-        <Button color="dark" variant="filled">
+        <Button
+          color="dark"
+          variant="filled"
+          onClick={handleDuplicate}
+          disabled={duplicateInProgress}
+        >
           Duplicate
         </Button>
-        <Button color="red" variant="outline">
-          Deprecate
-        </Button>
+        {!isDeprecated && (
+          <Button
+            color="red"
+            variant="outline"
+            onClick={openModal}
+            disabled={deprecateInProgress}
+          >
+            Deprecate
+          </Button>
+        )}
       </Group>
+      <ConfirmationModal
+        opened={modalOpened}
+        closeModal={closeModal}
+        action={handleDeprecate}
+        infoText="Deprecating a rubric marks it as replaced by another rubric. This cannot be undone."
+        confirmationText={rubric.title}
+        canConfirm={replacementID !== null}
+      >
+        <Select
+          label="Replacement rubric"
+          placeholder="Select a rubric"
+          data={replacementOptions.map((r) => ({
+            value: r.rubricID,
+            label: r.title,
+          }))}
+          value={replacementID}
+          onChange={setReplacementID}
+          searchable
+          withAsterisk
+        />
+      </ConfirmationModal>
     </Group>
   );
 }
