@@ -70,7 +70,7 @@ export function RubricViewingPage({
             Rubrics
           </Anchor>
           <Anchor href={`/rubrics/?id={id}`} c="dark" key={0}>
-            Rubric Title
+          {rubric.title}
           </Anchor>
         </Breadcrumbs>
         <TitleRow
