@@ -15,6 +15,7 @@ import {
   Paper,
   Container,
   Table,
+  Badge,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { LoadingPage } from "@/components/LoadingPage";
@@ -386,6 +387,10 @@ function IssueTableRow({
     setIsDeleting(true);
   }
 
+  // TODO: update to include under-review and reviews-done status
+  const issueStatus = issue.papers.length === 0 ? "no-papers" 
+    : "awaiting-reviewers";
+
   return (
     <Table.Tr key={issue.issueID}>
       <Table.Td>
@@ -393,7 +398,7 @@ function IssueTableRow({
       </Table.Td>
       <Table.Td ta="center">{issue.papers.length}</Table.Td>
       <Table.Td ta="center">0</Table.Td>
-      <Table.Td ta="center">Status</Table.Td>
+      <Table.Td ta="center"><IssueStatusBubble status={issueStatus} /></Table.Td>
       <Table.Td ta="right">
         <Group justify="flex-end">
           <Button
@@ -417,3 +422,39 @@ function IssueTableRow({
     </Table.Tr>
   );
 }
+
+function IssueStatusBubble({
+  status
+}: {
+  status: "no-papers" | "awaiting-reviewers" | "under-review" | "reviews-done" | null,
+}) {
+  switch (status) {
+    case "no-papers":
+      return (
+        <Badge color="gray" variant="light">
+          No Papers
+        </Badge>
+      );
+    case "awaiting-reviewers":
+      return (
+        <Badge color="gray" variant="light">
+          Awaiting Reviewers
+        </Badge>
+      );
+    case "under-review":
+      return (
+        <Badge color="blue" variant="light">
+          Under Review
+        </Badge>
+      );
+    case "reviews-done":
+      return (
+        <Badge color="green" variant="light">
+          Reviews Done
+        </Badge>
+      );
+    case null:
+      return <></>;
+  }
+}
+
