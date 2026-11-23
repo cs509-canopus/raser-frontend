@@ -4,6 +4,7 @@ import { ConfirmationModal } from "@/components/ConfirmationModal";
 import {
   deprecateRubric,
   duplicateRubric,
+  getRubric,
   listRubrics,
 } from "@/lib/rubrics-api";
 import { useDisclosure } from "@mantine/hooks";
@@ -108,9 +109,31 @@ function TitleRow({ rubric, onDeprecated }: TitleRowProps) {
   const [replacementOptions, setReplacementOptions] = useState<Rubric[]>([]);
   const [replacementID, setReplacementID] = useState<string | null>(null);
   const [errorText, setErrorText] = useState("");
+  // The backend does not store deprecation dates yet, so this is only known
+  // right after the user deprecates the rubric on this page
+  const [deprecationDate, setDeprecationDate] = useState<Date | null>(null);
+  const [replacementTitle, setReplacementTitle] = useState<string | null>(null);
 
   const isDeprecated = rubric.replacedByID !== null;
   const rubricStatus = isDeprecated ? "deprecated" : "published";
+
+  // Fetch the replacement rubric's title for the link
+  useEffect(() => {
+    if (rubric.replacedByID === null) return;
+    let cancelled = false;
+
+    const fetchReplacement = async () => {
+      const { result, error } = await getRubric(rubric.replacedByID!);
+      if (cancelled) return;
+      setReplacementTitle(error ? null : result.title);
+    };
+
+    fetchReplacement();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rubric.replacedByID]);
 
   // Load candidate replacement rubrics (published, not deprecated, not this one)
   // when the deprecate modal is opened
@@ -164,12 +187,16 @@ function TitleRow({ rubric, onDeprecated }: TitleRowProps) {
     if (replacementID === null) return;
     setDeprecateInProgress(true);
     setErrorText("");
-    const { error } = await deprecateRubric(rubric.rubricID, replacementID);
+    const { result, error } = await deprecateRubric(
+      rubric.rubricID,
+      replacementID,
+    );
     setDeprecateInProgress(false);
     if (error) {
       setErrorText("Failed to deprecate rubric");
       return;
     }
+    setDeprecationDate(new Date(result.deprecationDate));
     closeModal();
     onDeprecated(replacementID);
   };
@@ -186,6 +213,16 @@ function TitleRow({ rubric, onDeprecated }: TitleRowProps) {
           Designed by {rubric.designerID} - Published{" "}
           {rubric.publicationDate?.toLocaleDateString()}
         </Text>
+        {isDeprecated && (
+          <Text size="sm" c="dimmed">
+            Deprecated
+            {deprecationDate && ` ${deprecationDate.toLocaleDateString()}`} -
+            Replaced by{" "}
+            <Anchor href={`/rubrics?id=${rubric.replacedByID}`}>
+              {replacementTitle ?? "replacement rubric"}
+            </Anchor>
+          </Text>
+        )}
         {errorText && (
           <Text size="sm" c="red">
             {errorText}
