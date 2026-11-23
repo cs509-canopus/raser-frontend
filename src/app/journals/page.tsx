@@ -195,7 +195,12 @@ function JournalView() {
         </Paper>
         <Paper shadow="xs" withBorder p="xl">
           <Stack gap="sm">
-            <Title order={4}>Issues</Title>
+            <Group gap="xs" align="center">
+              <Title order={4}>Issues</Title>
+              <Badge color="gray" variant="light">
+                {issues.length}
+              </Badge>
+            </Group>
             <IssueTable issues={issues} handleDeleteIssue={handleDeleteIssue} />
           </Stack>
         </Paper>
