@@ -78,3 +78,26 @@ export async function duplicateRubric(
     `/rubrics/${rubricID}/duplicate`,
   );
 }
+
+// Deprecate rubric
+
+export interface DeprecateRubricResult {
+  rubricID: string;
+  replacementID: string;
+  deprecationDate: string;
+}
+
+export async function deprecateRubric(
+  rubricID: string,
+  replacementID: string,
+): Promise<Result<DeprecateRubricResult>> {
+  return request<DeprecateRubricResult>(
+    "POST",
+    `/rubrics/${rubricID}/deprecate`, {
+    body: {
+      replacementID: replacementID,
+    }
+  }
+  );
+}
+
