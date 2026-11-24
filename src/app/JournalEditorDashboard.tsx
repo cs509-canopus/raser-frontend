@@ -20,7 +20,6 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
-import Image from "next/image";
 
 export default function JournalEditorDashboard() {
   return (
