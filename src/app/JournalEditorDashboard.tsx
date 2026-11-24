@@ -5,7 +5,6 @@ import { Suspense, useState, useEffect } from "react";
 import { backend } from "@/axios-client";
 import { AxiosError } from "axios";
 import { Journal, ErrorResponse } from "@/types";
-import { HiOutlineInformationCircle } from "react-icons/hi2";
 import {
   Container,
   SimpleGrid,
@@ -140,13 +139,6 @@ function JournalEditorView() {
               />
             ))}
           </SimpleGrid>
-          <Flex align="center" gap="xs">
-            <HiOutlineInformationCircle size={14} color="#868e96" />
-            <Text className={styles.text}>
-              A journal can't be withdrawn once any of its papers has a reviewer
-              assigned.
-            </Text>
-          </Flex>
         </Stack>
       </Container>
     );
