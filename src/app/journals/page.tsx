@@ -24,6 +24,7 @@ import { getJournal, withdrawJournal } from "@/lib/journals-api";
 import { createIssue, deleteIssue, getIssue } from "@/lib/issues-api";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import router from "next/router";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function JournalsPage() {
   return (
@@ -182,9 +183,20 @@ function JournalView() {
 
   console.log("Journal:", journal);
 
+  const breadcrumbParts = [
+    {
+      label: "Journals",
+    },
+    {
+      label: journal.name,
+      href: `/journals/?id=${journal.journalID}`,
+    },
+  ];
+
   return (
     <Container fluid>
       <Stack>
+        <Breadcrumbs parts={breadcrumbParts} />
         <TitleRow
           journalName={journal.name}
           journalDescription={journal.description}
