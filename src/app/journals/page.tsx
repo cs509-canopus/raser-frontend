@@ -15,6 +15,7 @@ import {
   Paper,
   Container,
   Table,
+  Badge,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { LoadingPage } from "@/components/LoadingPage";
@@ -23,6 +24,7 @@ import { getJournal, withdrawJournal } from "@/lib/journals-api";
 import { createIssue, deleteIssue, getIssue } from "@/lib/issues-api";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
 import router from "next/router";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function JournalsPage() {
   return (
@@ -181,9 +183,20 @@ function JournalView() {
 
   console.log("Journal:", journal);
 
+  const breadcrumbParts = [
+    {
+      label: "Journals",
+    },
+    {
+      label: journal.name,
+      href: `/journals/?id=${journal.journalID}`,
+    },
+  ];
+
   return (
     <Container fluid>
       <Stack>
+        <Breadcrumbs parts={breadcrumbParts} />
         <TitleRow
           journalName={journal.name}
           journalDescription={journal.description}
@@ -194,7 +207,12 @@ function JournalView() {
         </Paper>
         <Paper shadow="xs" withBorder p="xl">
           <Stack gap="sm">
-            <Title order={4}>Issues</Title>
+            <Group gap="xs" align="center">
+              <Title order={4}>Issues</Title>
+              <Badge color="gray" variant="light">
+                {issues.length}
+              </Badge>
+            </Group>
             <IssueTable issues={issues} handleDeleteIssue={handleDeleteIssue} />
           </Stack>
         </Paper>
@@ -224,7 +242,7 @@ function TitleRow({
     useDisclosure(false);
 
   return (
-    <Group justify="space-between" align="center">
+    <Group justify="space-between" align="center" wrap="nowrap">
       <Stack gap={4}>
         <Title order={2}>{journalName}</Title>
         <Text size="sm" c="dimmed">
@@ -233,11 +251,14 @@ function TitleRow({
         </Text>
       </Stack>
 
-      <Stack>
-        <Button variant="outline" color="red" onClick={openModal}>
-          Withdraw Journal
-        </Button>
-      </Stack>
+      <Button
+        variant="outline"
+        color="red"
+        miw="fit-content"
+        onClick={openModal}
+      >
+        Withdraw Journal
+      </Button>
 
       <ConfirmationModal
         opened={modalOpened}
@@ -262,9 +283,9 @@ function CreateIssue({
   ) => Promise<string | undefined>;
 }) {
   const [volumeNumberValue, setVolumeNumberValue] = useState<number | string>(
-    0,
+    1,
   );
-  const [issueNumberValue, setIssueNumberValue] = useState<number | string>(0);
+  const [issueNumberValue, setIssueNumberValue] = useState<number | string>(1);
   const [inputError, setInputError] = useState<string>("");
   const [isCreating, setIsCreating] = useState(false);
 
@@ -304,7 +325,7 @@ function CreateIssue({
             radius="sm"
             label="Volume"
             withAsterisk
-            min={0}
+            min={1}
             value={volumeNumberValue}
             onChange={setVolumeNumberValue}
           />
@@ -312,7 +333,7 @@ function CreateIssue({
             radius="sm"
             label="Issue"
             withAsterisk
-            min={0}
+            min={1}
             value={issueNumberValue}
             onChange={setIssueNumberValue}
           />
@@ -357,12 +378,17 @@ function IssueTable({ issues, handleDeleteIssue }: IssueTableProps) {
 
   return (
     <Table>
-      <Table.Thead>
+      <Table.Thead
+        style={{
+          backgroundColor:
+            "light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6))",
+        }}
+      >
         <Table.Tr>
           <Table.Th>Issue</Table.Th>
-          <Table.Th ta="center">Papers</Table.Th>
-          <Table.Th ta="center">Reviewers Assigned</Table.Th>
-          <Table.Th ta="center">Status</Table.Th>
+          <Table.Th ta="left">Papers</Table.Th>
+          <Table.Th ta="left">Reviewers Assigned</Table.Th>
+          <Table.Th ta="left">Status</Table.Th>
           <Table.Th ta="right">Actions</Table.Th>
         </Table.Tr>
       </Table.Thead>
@@ -388,14 +414,20 @@ function IssueTableRow({
     setIsDeleting(true);
   }
 
+  // TODO: update to include under-review and reviews-done status
+  const issueStatus =
+    issue.papers.length === 0 ? "no-papers" : "awaiting-reviewers";
+
   return (
     <Table.Tr key={issue.issueID}>
       <Table.Td>
         Vol. {issue.volumeNumber}, No. {issue.issueNumber}
       </Table.Td>
-      <Table.Td ta="center">{issue.papers.length}</Table.Td>
-      <Table.Td ta="center">0</Table.Td>
-      <Table.Td ta="center">Status</Table.Td>
+      <Table.Td ta="left">{issue.papers.length}</Table.Td>
+      <Table.Td ta="left">0</Table.Td>
+      <Table.Td ta="left">
+        <IssueStatusBubble status={issueStatus} />
+      </Table.Td>
       <Table.Td ta="right">
         <Group justify="flex-end">
           <Button
@@ -418,4 +450,40 @@ function IssueTableRow({
       </Table.Td>
     </Table.Tr>
   );
+}
+
+function IssueStatusBubble({
+  status,
+}: {
+  status:
+    "no-papers" | "awaiting-reviewers" | "under-review" | "reviews-done" | null;
+}) {
+  switch (status) {
+    case "no-papers":
+      return (
+        <Badge color="gray" variant="light">
+          No Papers
+        </Badge>
+      );
+    case "awaiting-reviewers":
+      return (
+        <Badge color="gray" variant="light">
+          Awaiting Reviewers
+        </Badge>
+      );
+    case "under-review":
+      return (
+        <Badge color="blue" variant="light">
+          Under Review
+        </Badge>
+      );
+    case "reviews-done":
+      return (
+        <Badge color="green" variant="light">
+          Reviews Done
+        </Badge>
+      );
+    case null:
+      return <></>;
+  }
 }

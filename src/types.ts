@@ -36,6 +36,34 @@ export interface Rubric {
   replacedByID: string | null;
 }
 
+/**
+ * 
+ */
+export interface RubricQuestion {
+  section: number;
+  index: number;
+  question: string | null;
+  scoreExplanations: string | null;
+}
+
+/**
+ * Full rubric with questions. Response body for GetRubric function at GET /rubrics/{rubricID}
+ */
+export interface FullRubric {
+  rubricID: string;
+  designerID: string;
+  title: string;
+  questions: RubricQuestion[];
+  highQualityThreshold: number;
+  lowQualityThreshold: number;
+  publicationDate: Date | null;
+  isFavorite: boolean;
+  replacedByID: string | null;
+  createdAt: Date;
+}
+
+
 export interface ErrorResponse {
   error: string;
 }
+

@@ -1,6 +1,5 @@
 import {
   Anchor,
-  Badge,
   Button,
   Card,
   Container,
@@ -27,6 +26,7 @@ import {
 } from "@/lib/rubrics-api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { RubricStatusBubble } from "@/components/RubricStatusBubble";
 
 /**
  * Fetch rubrics with the given filters and convert them to `Rubric`s.
@@ -356,7 +356,7 @@ function ResultItem({ rubric, allRubrics }: ResultItemProps) {
     <Stack gap="sm">
       <Group justify="space-between">
         <Title order={5}>{rubric.title}</Title>
-        <StatusBubble status={status} />
+        <RubricStatusBubble status={status} />
       </Group>
       <Stack gap={0}>
         <Text>Question count: {rubric.questionCount}</Text>
@@ -393,33 +393,4 @@ function ResultItem({ rubric, allRubrics }: ResultItemProps) {
       </Group>
     </Stack>
   );
-}
-
-function StatusBubble({
-  status,
-}: {
-  status: "published" | "deprecated" | "draft" | null;
-}) {
-  switch (status) {
-    case "published":
-      return (
-        <Badge color="green" variant="light">
-          Published
-        </Badge>
-      );
-    case "deprecated":
-      return (
-        <Badge color="gray" variant="light">
-          Deprecated
-        </Badge>
-      );
-    case "draft":
-      return (
-        <Badge color="orange" variant="light">
-          Draft
-        </Badge>
-      );
-    case null:
-      return <></>;
-  }
 }
