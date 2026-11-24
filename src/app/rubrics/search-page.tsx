@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RubricStatusBubble } from "@/components/RubricStatusBubble";
+import { CiCalendar, CiSearch } from "react-icons/ci";
 
 /**
  * Fetch rubrics with the given filters and convert them to `Rubric`s.
@@ -190,13 +191,13 @@ function FiltersPanel({ applyFilters, loading }: FiltersPanelProps) {
     <Stack>
       <Title order={3}>Filters</Title>
       <InputWrapper label="Publication date">
-        <Group>
+        <Group grow gap="sm">
           <DateInput
             value={publishedAfter}
             onChange={setPublishedAfter}
             placeholder="From"
             valueFormat="YYYY-MM-DD"
-            w={125}
+            leftSection={<CiCalendar />}
             clearable
           />
           <DateInput
@@ -204,7 +205,7 @@ function FiltersPanel({ applyFilters, loading }: FiltersPanelProps) {
             onChange={setPublishedBefore}
             placeholder="To"
             valueFormat="YYYY-MM-DD"
-            w={125}
+            leftSection={<CiCalendar />}
             clearable
           />
         </Group>
@@ -215,7 +216,7 @@ function FiltersPanel({ applyFilters, loading }: FiltersPanelProps) {
             value={deprecationStatus}
             onChange={setDeprecationStatus}
             fullWidth
-            radius="sm"
+            radius="md"
             data={[
               { label: "All", value: "all" },
               { label: "Active", value: "active" },
@@ -257,6 +258,7 @@ function SearchBar({ value, onChange }: SearchBarProps) {
       value={value}
       onChange={(event) => onChange(event.currentTarget.value)}
       radius="sm"
+      leftSection={<CiSearch />}
       placeholder="Search rubrics by title..."
     />
   );
