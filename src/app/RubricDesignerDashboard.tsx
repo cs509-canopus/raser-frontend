@@ -14,6 +14,7 @@ import {
     Modal,
     TextInput,
     NumberInput,
+    Select,
 } from "@mantine/core";
 import {
     HiOutlinePencilSquare,
@@ -47,10 +48,15 @@ function RubricDesignerView() {
     const [lowQualityThreshold, setLowQualityThreshold] = useState<
         number | string
     >("");
-
     // modal request state
     const [creatingRubric, setCreatingRubric] = useState(false);
     const [createError, setCreateError] = useState<string | null>(null);
+
+    // fields for deprecate rubric
+    const [deprecateRubric, setDeprecateRubric] = useState<Rubric | null>(null);
+    const [replacementID, setReplacementID] = useState<string | null>(null);
+    const [deprecatingRubric, setDeprecatingRubric] = useState(false);
+    const [deprecateError, setDeprecateError] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -88,8 +94,6 @@ function RubricDesignerView() {
     }, []);
 
     const handleCreateRubric = async () => {
-        setCreatingRubric(false);
-
         if (!rubricName) {
             setCreateError("Please enter a title for the rubric.");
             return;
@@ -169,8 +173,84 @@ function RubricDesignerView() {
         }
     };
 
+
+    const handleDuplicate = async (rubric: Rubric) => {
+        try {
+            const response = await backend.post(`/rubrics/${rubric.rubricID}/duplicate`);
+
+            const newRubricID = response.data.rubricID;
+
+            console.log("Duplicated rubric successfully:", response.data);
+
+            router.push(`/rubrics/?id=${newRubricID}`);
+        } catch (e) {
+            console.error("Error duplicating rubric.", e);
+
+            if (e instanceof AxiosError && e.response) {
+                console.error("Response status:", e.response?.status);
+                console.error("Response data:", e.response?.data);
+            }
+        }
+    }
+
+    const replacementRubric = rubrics
+        .filter(
+            (rubric) =>
+                getRubricStatus(rubric) === "PUBLISHED" &&
+                rubric.rubricID !== deprecateRubric?.rubricID
+        )
+        .map((rubric) => ({
+            value: rubric.rubricID,
+            label: rubric.title,
+        }));
+
+    const handleDeprecate = async () => {
+        if (!deprecateRubric || !replacementID) {
+            setDeprecateError("Please select a replacement rubric");
+            return;
+        }
+
+        setDeprecatingRubric(true);
+        setDeprecateError(null);
+
+        try {
+            const response = await backend.post(
+                `/rubrics/${deprecateRubric.rubricID}/deprecate`,
+                    {
+                        replacementID: replacementID,
+                    }
+            );
+            setRubrics((current) =>
+                current.map((r) =>
+                    r.rubricID === deprecateRubric.rubricID
+                        ? { ...r,
+                            replacedByID: replacementID,
+                            deprecationDate: response.data.deprecationDate,
+                        }
+                        : r
+                )
+            );
+
+            setDeprecateRubric(null);
+            setReplacementID(null);
+            setDeprecateError(null);
+
+            console.log("Successfully deprecated rubric:", response.data);
+        } catch (e) {
+            console.error("Error duplicating rubric.", e);
+
+            if (e instanceof AxiosError && e.response) {
+                console.error("Response status:", e.response?.status);
+                console.error("Response data:", e.response?.data);
+            }
+        } finally {
+            setDeprecatingRubric(false);
+        }
+    };
+
     return (
         <>
+            {/* CREATE RUBRIC MODAL */}
             <Modal
                 opened={createModalOpen}
                 onClose={() => {
@@ -224,6 +304,76 @@ function RubricDesignerView() {
                     </Flex>
                 </Stack>
             </Modal>
+
+            {/* DEPRECATE RUBRIC MODAL */}
+            <Modal
+                opened={deprecateRubric !== null}
+                onClose={() => {
+                    setDeprecateRubric(null);
+                    setReplacementID(null);
+                    setDeprecateError(null);
+                }}
+                title="Deprecate rubric"
+                centered
+            >
+                <Stack gap="md">
+                    <Text>
+                        You are about to deprecate:
+                    </Text>
+
+                    <Text fw={700}>
+                        {deprecateRubric?.title}
+                    </Text>
+
+                    <Text>
+                        Please select the published rubric that is a good replacement for this one.
+                    </Text>
+
+                    <Select
+                        label="Replacement rubric"
+                        placeholder="Select a rubric"
+                        data={replacementRubric}
+                        value={replacementID}
+                        onChange={setReplacementID}
+                        searchable
+                        clearable
+                        nothingFoundMessage="No published rubrics available"
+                    />
+                    {deprecateError && (
+                        <Text c="red" size="sm">
+                            {deprecateError}
+                        </Text>
+                    )}
+
+                    {replacementRubric.length === 0 && (
+                        <Text c="dimmed" size="sm">
+                            There are no available replacement rubrics
+                        </Text>
+                    )}
+
+                    <Flex justify="flex-end" gap="sm">
+                        <Button
+                            variant="default"
+                            onClick={() => {
+                                setDeprecateRubric(null);
+                                setReplacementID(null);
+                                setDeprecateError(null);
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            color="red"
+                            onClick={handleDeprecate}
+                            loading={deprecatingRubric}
+                            disabled={!replacementID || replacementRubric.length === 0}
+                        >
+                            Deprecate
+                        </Button>
+                    </Flex>
+                </Stack>
+            </Modal>
+
             <Container className={styles.page} fluid>
                 <Flex direction="column" gap="xs">
                     <Stack mb="sm" gap="xs">
@@ -247,8 +397,12 @@ function RubricDesignerView() {
                     <RubricList
                         rubrics={rubrics}
                         onView={(r) => console.log("view", r.rubricID)}
-                        onDuplicate={(r) => console.log("duplicate", r.rubricID)}
-                        onDeprecate={(r) => console.log("deprecate", r.rubricID)}
+                        onDuplicate={handleDuplicate}
+                        onDeprecate={(r) => {
+                            setDeprecateRubric(r)
+                            setReplacementID(null)
+                            setDeprecateError(null);
+                        }}
                         onEdit={(r) => router.push(`/rubrics/?id=${r.rubricID}`)}
                         onDelete={handleDelete}
                     />
@@ -256,6 +410,17 @@ function RubricDesignerView() {
             </Container>
         </>
     );
+}
+
+interface DuplicateRubricProps {
+    rubricID: string;
+    generatedFrom: string;
+}
+
+interface DeprecateRubricProps {
+    userID: string;
+    rubricID: string;
+    replacementID: string;
 }
 
 interface DesignRubricWidgetProps {
