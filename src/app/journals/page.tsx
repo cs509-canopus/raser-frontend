@@ -296,8 +296,8 @@ function CreateIssue({
     }
 
     // Reset field values and error text
-    setIssueNumberValue(0);
-    setVolumeNumberValue(0);
+    setIssueNumberValue(1);
+    setVolumeNumberValue(1);
     setInputError("");
   }
 
