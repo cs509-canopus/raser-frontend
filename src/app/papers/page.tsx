@@ -20,6 +20,9 @@ import {
   type PaperView,
   PapersApiError,
 } from "@/lib/papers-api";
+import { getIssue } from "@/lib/issues-api";
+import { getJournal } from "@/lib/journals-api";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function PaperPage() {
   return (
@@ -35,15 +38,31 @@ function PaperDetail() {
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
   const [closed, setClosed] = useState(false);
+  const [journalName, setJournalName] = useState<string | null>(null);
+  const [issueLabel, setIssueLabel] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     getPaper(paperId)
       .then((p) => {
-        if (!cancelled) {
-          setPaper(p);
-          setClosed(p.isClosed);
-        }
+        if (cancelled) return;
+        setPaper(p);
+        setClosed(p.isClosed);
+
+        getIssue(p.issueID).then(async (res) => {
+          if (cancelled) return;
+          if (res.error) return;
+          setIssueLabel(
+            `Vol. ${res.result.volumeNumber}, No. ${res.result.issueNumber}`,
+          );
+        });
+
+        // Fetch the parent journal
+        getJournal(p.journalID).then(async (res) => {
+          if (cancelled) return;
+          if (res.error) return;
+          setJournalName(res.result.name);
+        });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -96,8 +115,27 @@ function PaperDetail() {
     : null;
   const details = [authors, publicationDate].filter(Boolean).join(" · ");
 
+  const breadcrumbParts = [
+    {
+      label: "Journals",
+    },
+    {
+      label: journalName ?? "Journal",
+      href: `/journals/?id=${paper.journalID}`,
+    },
+    {
+      label: issueLabel ?? "Issue",
+      href: `/issues/?id=${paper.issueID}`,
+    },
+    {
+      label: paper.title ?? "Paper",
+      href: `/papers/?id=${paper.paperID}`,
+    },
+  ];
+
   return (
     <Stack p="lg" maw={960}>
+      <Breadcrumbs parts={breadcrumbParts} />
       <Card withBorder padding="lg" radius="md">
         <Group justify="space-between" align="flex-start" wrap="nowrap">
           <Stack gap={4}>

@@ -90,7 +90,7 @@ export function getIssue(issueId: string): Promise<IssueView> {
   return request<IssueView>(`/issues/${issueId}`);
 }
 
-export function deleteIssue(issueId: string): Promise<IssueView> {
+export function deleteIssue(issueId: string): Promise<{ issueID: string }> {
   return request<{ issueID: string }>(`/issues/${issueId}`, {
     method: "DELETE",
   });

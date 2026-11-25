@@ -1,3 +1,12 @@
+export interface JournalSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  coverImage: string | null;
+  issueCount: number;
+}
+
+
 /**
  * Response body for GetJournal lambda function at GET /journals/{journalID} on HTTP 200
  */
