@@ -7,6 +7,7 @@ import { getRubric } from "@/lib/rubrics-api";
 import { LoadingPage } from "@/components/LoadingPage";
 import { RubricViewingPage } from "./viewing-page";
 import { FullRubric } from "@/types";
+import { RubricEditPage } from "./edit-page";
 
 export default function RubricPage() {
   return (
@@ -87,11 +88,6 @@ function RubricView({ rubricID }: { rubricID: string }) {
   } else if (rubricIsPublished) {
     return <RubricViewingPage rubric={rubric} />;
   } else {
-    // TODO: replace with actual page component
-    return (
-      <div>
-        <h1>Rubric editing page</h1>
-      </div>
-    );
+    return <RubricEditPage />;
   }
 }
