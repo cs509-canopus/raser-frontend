@@ -186,6 +186,7 @@ export function RubricEditPage() {
   // ADD QUESTION
   async function addQuestion(
     section: number,
+    index: number,
     question: string,
     scoreExplanations: string[]
   ) {
@@ -196,6 +197,7 @@ export function RubricEditPage() {
         `/rubrics/${rubricID}/questions`,
         {
           section,
+          index,
           question,
           scoreExplanations,
         }
@@ -498,6 +500,7 @@ interface SectionCardProps {
   questions: RubricQuestion[];
   onAddQuestion: (
     section: number,
+    index: number,
     question: string,
     explanations: string[]
   ) => Promise<void>;
@@ -517,6 +520,7 @@ function SectionCard({
   const sortedQuestions = [...questions].sort(
     (a, b) => a.index - b.index
   );
+  const nextIndex = sortedQuestions.length
 
   return (
     <Paper
@@ -543,6 +547,7 @@ function SectionCard({
         {sortedQuestions.length === 0 && (
           <AddQuestionCard
             section={section}
+            index={nextIndex}
             onAdd={onAddQuestion}
             onCancel={() => {}}
             showCancel={false}
@@ -553,6 +558,7 @@ function SectionCard({
         {addingQuestion ? (
           <AddQuestionCard
             section={section}
+            index={nextIndex}
             onAdd={onAddQuestion}
             onCancel={() => setAddingQuestion(false)}
           />
@@ -669,14 +675,17 @@ function QuestionCard({
 
   // Adding a Question Card
   function AddQuestionCard({
+    index,
     section,
     onAdd,
     onCancel,
     showCancel = true,
   }: {
+    index: number;
     section: number;
     onAdd: (
       section: number,
+      index: number,
       question: string,
       explanations: string[]
     ) => Promise<void>;
@@ -695,7 +704,7 @@ function QuestionCard({
       setLoading(true);
 
       try {
-        await onAdd(section, question, explanations);
+        await onAdd(section, index, question, explanations);
         onCancel();
       } catch (error) {
         console.error("Error adding question:", error);
