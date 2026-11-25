@@ -142,13 +142,6 @@ function JournalEditorView() {
               />
             ))}
           </SimpleGrid>
-          <Flex align="center" gap="xs">
-            <HiOutlineInformationCircle size={14} color="#868e96" />
-            <Text className={styles.text}>
-              A journal can't be withdrawn once any of its papers has a reviewer
-              assigned.
-            </Text>
-          </Flex>
         </Stack>
       </Container>
     );

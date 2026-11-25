@@ -24,6 +24,7 @@ import {
   Badge,
   Select,
 } from "@mantine/core";
+import { CiLock } from "react-icons/ci";
 
 const sectionTitles = [
   "Section 1 - Introduction",
@@ -69,7 +70,7 @@ export function RubricViewingPage({
           <Anchor href="/rubrics" c="gray" key={0}>
             Rubrics
           </Anchor>
-          <Anchor href={`/rubrics/?id={id}`} c="dark" key={0}>
+          <Anchor href={`/rubrics/?id=${rubric.rubricID}`} c="dark" key={0}>
           {rubric.title}
           </Anchor>
         </Breadcrumbs>
@@ -299,8 +300,13 @@ function StatsRow({ stats }: { stats: Stat[] }) {
 function ReadOnlyNotice() {
   return (
     <Paper bg="gray.1" p="sm">
-      Published rubrics are read-only. Duplicate this rubric to start a new,
-      editable draft from it.
+      <Group gap="xs">
+        <CiLock />
+        <Text>
+          Published rubrics are read-only. Duplicate this rubric to start a new,
+          editable draft from it.
+        </Text>
+      </Group>
     </Paper>
   );
 }
