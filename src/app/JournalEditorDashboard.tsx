@@ -4,7 +4,7 @@ import styles from "./page.module.css";
 import { Suspense, useState, useEffect } from "react";
 import { backend } from "@/axios-client";
 import { AxiosError } from "axios";
-import { Journal, ErrorResponse } from "@/types";
+import { Journal, ErrorResponse, JournalSummary } from "@/types";
 import { HiOutlineInformationCircle } from "react-icons/hi2";
 import {
   Container,
@@ -20,6 +20,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
+import router from "next/router";
 
 export default function JournalEditorDashboard() {
   return (
@@ -30,7 +31,7 @@ export default function JournalEditorDashboard() {
 }
 
 function JournalEditorView() {
-  const [journals, setJournals] = useState<Journal[]>([]);
+  const [journals, setJournals] = useState<JournalSummary[]>([]); // journal summary
   const [error, setError] = useState<ErrorResponse | null>(null);
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
@@ -40,7 +41,7 @@ function JournalEditorView() {
     let cancelled = false;
     const fetchJournals = async () => {
       try {
-        const journalResponse = await backend.get<{ journals: Journal[] }>(
+        const journalResponse = await backend.get<{ journals: JournalSummary[] }>( // journal summary
           `/journals`,
         );
         console.log(
@@ -71,17 +72,21 @@ function JournalEditorView() {
   async function addJournal(newJournal: NewJournal): Promise<string | undefined> {
     try {
       // journal add request
-      const req = await backend.post<Journal>(`/journals`, newJournal);
+      const req = await backend.post<JournalSummary>(`/journals`, newJournal);
 
       // add new journal to list
       setJournals((prev) => [...prev, {
-        journalID: req.data.journalID,
+        id: req.data.id,
         name: req.data.name,
         description: req.data.description,
-        websiteUrl: req.data.websiteUrl,
         coverImage: req.data.coverImage,
-        createdAt: req.data.createdAt,
-        issues: req.data.issues,
+        issueCount: req.data.issueCount,
+        // name: req.data.name,
+        // description: req.data.description,
+        // websiteUrl: req.data.websiteUrl,
+        // coverImage: req.data.coverImage,
+        // createdAt: req.data.createdAt,
+        // issues: req.data.issues,
       }]);
     } catch (e) {
       if (e instanceof AxiosError && e.response) {
@@ -94,18 +99,18 @@ function JournalEditorView() {
   }
 
   // withdraw journal function
-  function withdrawJournal(journal: Journal) {
+  function withdrawJournal(journal: JournalSummary) {
     if (journal === null) return;
 
     backend
-      .post(`/journals/${journal.journalID}/withdraw`)
+      .post(`/journals/${journal.id}/withdraw`)
       .then(() => {
-        setJournals((prev) => prev.filter((j) => j.journalID !== journal.journalID),);
+        setJournals((prev) => prev.filter((j) => j.id !== journal.id),);
           // Reload the page, which will bring them to JournalNotFound
           // window.location.reload());
       })
       .catch((err) => {
-        console.log(`Error on POST /journals/${journal.journalID}/withdraw`, err);
+        console.log(`Error on POST /journals/${journal.id}/withdraw`, err);
       });
   }
 
@@ -130,7 +135,7 @@ function JournalEditorView() {
           <SimpleGrid cols={2} spacing="xs">
             {journals.map((journal) => (
               <JournalCard
-                key={journal.journalID}
+                key={journal.id}
                 journal={journal}
                 onSelect={onSelect}
                 onWithdraw={onWithdraw}
@@ -174,7 +179,7 @@ function JournalEditorView() {
             fullWidth
             className={styles.button}
             component={Link}
-            href={`/journals/?id=${journal.journalID}`}
+            href={`/journals/?id=${journal.id}`}
             w="100%"
           >
             Select
@@ -225,7 +230,7 @@ function JournalEditorView() {
           <div>
             <JournalCardList
               journals={journals}
-              onSelect={(j) => console.log("select", j.journalID)}
+              onSelect={(j) => router.push(`/journals/?id=${j.id}`)}
               onWithdraw={withdrawJournal}
             />
           </div>
@@ -248,22 +253,22 @@ function JournalEditorView() {
 
 // listing journals components
 interface JournalListProps {
-  journals: Journal[];
-  onSelect?: (journal: Journal) => void;
-  onWithdraw?: (journal: Journal) => void;
+  journals: JournalSummary[];
+  onSelect?: (journal: JournalSummary) => void;
+  onWithdraw?: (journal: JournalSummary) => void;
 }
 
 interface JournalCardProps {
-  journal: Journal;
-  onSelect?: (journal: Journal) => void;
-  onWithdraw?: (journal: Journal) => void;
+  journal: JournalSummary;
+  onSelect?: (journal: JournalSummary) => void;
+  onWithdraw?: (journal: JournalSummary) => void;
 }
 
 // Add journal modal components
 interface AddJournalModalProps {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (journal: NewJournal) => void;
+  onSubmit: (JournalSummary: NewJournal) => void;
 }
 
 // New journal interface
