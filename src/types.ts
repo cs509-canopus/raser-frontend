@@ -23,6 +23,28 @@ export interface Issue {
   papers: string[];
 }
 
+/**
+ * Response body for GetIssue lambda function at GET /rubric/{rubricID} on HTTP 200
+ */
+export interface Rubric {
+  rubricID: string;
+  title: string;
+  highScoreThreshold: number;
+  lowScoreThreshold: number;
+  publicationDate: Date | null;
+  isFavorite: boolean;
+  replacedByID: string | null;
+  createdAt: Date;
+
+}
+
+export interface RubricQuestion {
+  section: number;
+  index: number;
+  question: string;
+  scoreExplanations: string[];
+}
+
 export interface ErrorResponse {
   error: string;
 }
