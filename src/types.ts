@@ -24,7 +24,7 @@ export interface Issue {
 }
 
 /**
- * Rubric summary displayed on the rubric search page
+ * Response body for GetIssue lambda function at GET /rubric/{rubricID} on HTTP 200
  */
 export interface Rubric {
   rubricID: string;
@@ -61,7 +61,6 @@ export interface FullRubric {
   replacedByID: string | null;
   createdAt: Date;
 }
-
 
 export interface ErrorResponse {
   error: string;
