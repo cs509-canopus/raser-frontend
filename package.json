@@ -12,6 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-amplify/ui-react": "^6.15.7",
     "@mantine/carousel": "^9.7.3",
     "@mantine/charts": "^9.7.3",
     "@mantine/code-highlight": "^9.7.3",
@@ -30,30 +31,35 @@
     "@tiptap/pm": "^3.32.0",
     "@tiptap/react": "^3.32.0",
     "@tiptap/starter-kit": "^3.32.0",
+    "aws-amplify": "^6.22.2",
     "axios": "^1.21.0",
     "dayjs": "^1.11.23",
     "dotenv": "^18.0.9",
     "embla-carousel": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
-    "next": "^16.4.2",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-icons": "^5.7.0",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.19.43",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "^16.4.2",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.6",
     "postcss": "^8.5.30",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
     "prettier": "3.9.10",
     "ts-jest": "^29.4.15",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
   }
 }

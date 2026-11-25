@@ -1,22 +1,93 @@
 "use client";
 
-import styles from "./page.module.css";
-import { Suspense } from "react";
-import { SimpleGrid, Container, Button, Text } from "@mantine/core";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { RubricSearchPage } from "./search-page";
+import { getRubric } from "@/lib/rubrics-api";
+import { LoadingPage } from "@/components/LoadingPage";
+import { RubricViewingPage } from "./viewing-page";
+import { FullRubric } from "@/types";
+import { RubricEditPage } from "./edit-page";
 
-export default function EditRubricPage() {
-    return (
-        <Suspense fallback={<p>Loading...</p>}>
-            <EditRubricView />
-        </Suspense>
-    );
+export default function RubricPage() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <RubricRouter />
+    </Suspense>
+  );
 }
 
-function EditRubricView() {
+function RubricRouter() {
+  const searchParams = useSearchParams();
+  const rubricID = searchParams.get("id"); // string |
+  // No ID provided: show search page
+  if (rubricID === null) {
+    return <RubricSearchPage />;
+  }
+
+  // Keyed by ID so all fetch state resets whenever the ID changes
+  return <RubricView key={rubricID} rubricID={rubricID} />;
+}
+
+function RubricView({ rubricID }: { rubricID: string }) {
+  const [rubric, setRubric] = useState<FullRubric | null>(null);
+  const [fetchError, setFetchError] = useState("");
+
+  // Retrieve rubric whenever rubricID changes
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchRubric = async () => {
+      const { result, error } = await getRubric(rubricID);
+      if (error) {
+        if (!cancelled && "data" in error) {
+          setFetchError(error.data);
+        }
+        return;
+      }
+
+      if (cancelled) return;
+      setRubric({
+        rubricID: result.rubricID,
+        designerID: result.designerID,
+        title: result.title,
+        questions: result.questions,
+        highQualityThreshold: result.highQualityThreshold,
+        lowQualityThreshold: result.lowQualityThreshold,
+        publicationDate:
+          result.publicationDate !== null
+            ? new Date(result.publicationDate)
+            : null,
+        isFavorite: result.isFavorite,
+        replacedByID: result.replacedByID,
+        createdAt: new Date(result.createdAt),
+      });
+    };
+
+    fetchRubric();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rubricID]);
+
+  // Show error page if getRubric failed
+  if (fetchError !== "") {
     return (
-        <div className={styles.page}>
-            <h1>Edit Rubric</h1>
-            <p>Here you can edit an existing rubric.</p>
-        </div>
+      <div>
+        <h1>Failed to get rubric</h1>
+      </div>
     );
+  }
+
+  // Rubric is published if the publication date is not null
+  const rubricIsPublished = rubric?.publicationDate !== null;
+
+  if (rubric === null) {
+    return <LoadingPage loadingText="Loading rubric..." />;
+  } else if (rubricIsPublished) {
+    return <RubricViewingPage rubric={rubric} />;
+  } else {
+    return <RubricEditPage />;
+  }
 }

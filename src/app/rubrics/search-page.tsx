@@ -1,0 +1,398 @@
+import {
+  Anchor,
+  Button,
+  Card,
+  Container,
+  Group,
+  InputWrapper,
+  Loader,
+  Paper,
+  ScrollArea,
+  SegmentedControl,
+  Stack,
+  TextInput,
+  Title,
+  Text,
+} from "@mantine/core";
+import { DateInput } from "@mantine/dates";
+import { useEffect, useState } from "react";
+import type { Rubric } from "@/types";
+import classes from "./search-page.module.css";
+import {
+  duplicateRubric,
+  getRubric,
+  listRubrics,
+  type ListRubricsFilters,
+} from "@/lib/rubrics-api";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { RubricStatusBubble } from "@/components/RubricStatusBubble";
+import { CiCalendar, CiSearch } from "react-icons/ci";
+
+/**
+ * Fetch rubrics with the given filters and convert them to `Rubric`s.
+ * Returns null on error.
+ */
+async function fetchRubrics(
+  filters: ListRubricsFilters,
+): Promise<Rubric[] | null> {
+  const { result, error } = await listRubrics(filters);
+  if (error) return null;
+
+  return result.rubrics.map((rubric) => ({
+    rubricID: rubric.id,
+    title: rubric.title,
+    highQualityThreshold: rubric.highQualityThreshold,
+    lowQualityThreshold: rubric.lowQualityThreshold,
+    questionCount: rubric.questionCount,
+    publicationDate: rubric.publicationDate
+      ? new Date(rubric.publicationDate)
+      : null,
+    replacedByID: rubric.replacedByID,
+  }));
+}
+
+export function RubricSearchPage() {
+  // Full list of rubrics; filtering will be applied here before passing to ResultsList
+  const [rubrics, setRubrics] = useState<Rubric[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Case-insensitive title match against the search query
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredRubrics = rubrics.filter((rubric) =>
+    rubric.title.toLowerCase().includes(normalizedQuery),
+  );
+
+  // Starts true because rubrics are fetched on mount
+  const [loading, setLoading] = useState(true);
+
+  // Re-fetch rubrics from the backend with the given filters
+  const applyFilters = async (filters: ListRubricsFilters) => {
+    setLoading(true);
+    const fetched = await fetchRubrics(filters);
+    if (fetched) setRubrics(fetched);
+    setLoading(false);
+  };
+
+  // Fetch all rubrics on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchRubrics({}).then((fetched) => {
+      if (cancelled) return;
+      if (fetched) setRubrics(fetched);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    // Layout and responsive breakpoints are defined in search-page.module.css
+    <Container fluid py="md" className={classes.page}>
+      <Stack h="100%">
+        <Title>Browse Rubrics</Title>
+        <div className={classes.body}>
+          <Paper shadow="xs" withBorder p="lg" className={classes.filters}>
+            <FiltersPanel applyFilters={applyFilters} loading={loading} />
+          </Paper>
+          <Stack className={classes.results}>
+            <SearchBar value={searchQuery} onChange={setSearchQuery} />
+            <ScrollArea className={classes.scrollArea} offsetScrollbars>
+              {loading ? (
+                <Stack align="center" justify="center" py="xl">
+                  <Text size="xl">Loading rubrics...</Text>
+                  <Loader color="blue" type="oval" size="xl" />
+                </Stack>
+              ) : (
+                <ResultsList rubrics={filteredRubrics} allRubrics={rubrics} />
+              )}
+            </ScrollArea>
+          </Stack>
+        </div>
+      </Stack>
+    </Container>
+  );
+}
+
+type DeprecationStatus = "all" | "active" | "deprecated";
+
+interface FiltersPanelProps {
+  /** Called with the selected filters; the parent re-fetches rubrics */
+  applyFilters: (filters: ListRubricsFilters) => void;
+  /** Disables the buttons while a fetch is in progress */
+  loading: boolean;
+}
+
+/** Raw input values of the filters panel */
+interface FilterInputs {
+  publishedAfter: string | null;
+  publishedBefore: string | null;
+  deprecationStatus: DeprecationStatus;
+}
+
+const EMPTY_FILTER_INPUTS: FilterInputs = {
+  publishedAfter: null,
+  publishedBefore: null,
+  deprecationStatus: "all",
+};
+
+function filterInputsEqual(a: FilterInputs, b: FilterInputs): boolean {
+  return (
+    a.publishedAfter === b.publishedAfter &&
+    a.publishedBefore === b.publishedBefore &&
+    a.deprecationStatus === b.deprecationStatus
+  );
+}
+
+function FiltersPanel({ applyFilters, loading }: FiltersPanelProps) {
+  const [publishedBefore, setPublishedBefore] = useState<string | null>(null);
+  const [publishedAfter, setPublishedAfter] = useState<string | null>(null);
+  const [deprecationStatus, setDeprecationStatus] =
+    useState<DeprecationStatus>("all");
+  // Inputs as of the last apply/reset, used to detect unapplied changes
+  const [appliedInputs, setAppliedInputs] =
+    useState<FilterInputs>(EMPTY_FILTER_INPUTS);
+
+  const currentInputs: FilterInputs = {
+    publishedAfter,
+    publishedBefore,
+    deprecationStatus,
+  };
+  const hasUnappliedChanges = !filterInputsEqual(currentInputs, appliedInputs);
+  // Reset is allowed if either the inputs or the applied filters are non-empty
+  const canReset =
+    !filterInputsEqual(currentInputs, EMPTY_FILTER_INPUTS) ||
+    !filterInputsEqual(appliedInputs, EMPTY_FILTER_INPUTS);
+
+  const handleApply = () => {
+    setAppliedInputs(currentInputs);
+    applyFilters({
+      publishedAfter: publishedAfter ? new Date(publishedAfter) : undefined,
+      publishedBefore: publishedBefore ? new Date(publishedBefore) : undefined,
+      deprecated:
+        deprecationStatus === "all"
+          ? undefined
+          : deprecationStatus === "deprecated",
+    });
+  };
+
+  const handleReset = () => {
+    setPublishedBefore(null);
+    setPublishedAfter(null);
+    setDeprecationStatus("all");
+    setAppliedInputs(EMPTY_FILTER_INPUTS);
+    applyFilters({});
+  };
+
+  return (
+    <Stack>
+      <Title order={3}>Filters</Title>
+      <InputWrapper label="Publication date">
+        <Group grow gap="sm">
+          <DateInput
+            value={publishedAfter}
+            onChange={setPublishedAfter}
+            placeholder="From"
+            valueFormat="YYYY-MM-DD"
+            leftSection={<CiCalendar />}
+            clearable
+          />
+          <DateInput
+            value={publishedBefore}
+            onChange={setPublishedBefore}
+            placeholder="To"
+            valueFormat="YYYY-MM-DD"
+            leftSection={<CiCalendar />}
+            clearable
+          />
+        </Group>
+      </InputWrapper>
+      <InputWrapper label="Is deprecated">
+        <div>
+          <SegmentedControl
+            value={deprecationStatus}
+            onChange={setDeprecationStatus}
+            fullWidth
+            radius="md"
+            data={[
+              { label: "All", value: "all" },
+              { label: "Active", value: "active" },
+              { label: "Deprecated", value: "deprecated" },
+            ]}
+          />
+        </div>
+      </InputWrapper>
+      <Group>
+        <Button
+          variant="filled"
+          color="dark"
+          onClick={handleApply}
+          disabled={loading || !hasUnappliedChanges}
+        >
+          Apply filters
+        </Button>
+        <Button
+          variant="outline"
+          color="dark"
+          onClick={handleReset}
+          disabled={loading || !canReset}
+        >
+          Reset
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
+
+interface SearchBarProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function SearchBar({ value, onChange }: SearchBarProps) {
+  return (
+    <TextInput
+      value={value}
+      onChange={(event) => onChange(event.currentTarget.value)}
+      radius="sm"
+      leftSection={<CiSearch />}
+      placeholder="Search rubrics by title..."
+    />
+  );
+}
+
+interface ResultsListProps {
+  /** Rubrics to display (already filtered) */
+  rubrics: Rubric[];
+  /** Full unfiltered list, used for title lookups */
+  allRubrics: Rubric[];
+}
+
+function ResultsList({ rubrics, allRubrics }: ResultsListProps) {
+  return (
+    // Small padding so card borders/shadows aren't clipped by the scroll area
+    <Stack p={2}>
+      {rubrics.map((rubric) => (
+        <Card key={rubric.rubricID} shadow="xs" withBorder padding="lg">
+          <ResultItem rubric={rubric} allRubrics={allRubrics} />
+        </Card>
+      ))}
+    </Stack>
+  );
+}
+
+type RubricStatus = "published" | "deprecated" | "draft";
+
+function getRubricStatus(rubric: Rubric): RubricStatus {
+  if (rubric.replacedByID !== null) return "deprecated";
+  if (rubric.publicationDate !== null) return "published";
+  return "draft";
+}
+
+function formatDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+interface ReplacementLinkProps {
+  /** ID of the replacement rubric to link to */
+  rubricID: string;
+  /** Searched for the title before falling back to getRubric */
+  allRubrics: Rubric[];
+}
+
+function ReplacementLink({ rubricID, allRubrics }: ReplacementLinkProps) {
+  const localTitle = allRubrics.find((r) => r.rubricID === rubricID)?.title;
+  const [fetchedTitle, setFetchedTitle] = useState<string | null>(null);
+
+  // Only fetch the title if it isn't in the local list
+  useEffect(() => {
+    if (localTitle !== undefined) return;
+    let cancelled = false;
+
+    const fetchTitle = async () => {
+      const { result, error } = await getRubric(rubricID);
+      if (error || cancelled) return;
+      setFetchedTitle(result.title);
+    };
+
+    fetchTitle();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rubricID, localTitle]);
+
+  return (
+    <Anchor component={Link} href={`/rubrics?id=${rubricID}`}>
+      {localTitle ?? fetchedTitle ?? rubricID}
+    </Anchor>
+  );
+}
+
+interface ResultItemProps {
+  rubric: Rubric;
+  /** Full unfiltered list, used to resolve the replacement rubric's title */
+  allRubrics: Rubric[];
+}
+
+function ResultItem({ rubric, allRubrics }: ResultItemProps) {
+  const status = getRubricStatus(rubric);
+  const [duplicating, setDuplicating] = useState(false);
+  const router = useRouter();
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    const { result, error } = await duplicateRubric(rubric.rubricID);
+    if (error) {
+      setDuplicating(false);
+      return;
+    }
+    // Duplicates are unpublished drafts, so the rubric page shows the editor
+    router.push(`/rubrics/?id=${result.rubricID}`);
+  };
+
+  return (
+    <Stack gap="sm">
+      <Group justify="space-between">
+        <Title order={5}>{rubric.title}</Title>
+        <RubricStatusBubble status={status} />
+      </Group>
+      <Stack gap={0}>
+        <Text>Question count: {rubric.questionCount}</Text>
+        {status !== "draft" && rubric.publicationDate && (
+          <Text>Publication date: {formatDate(rubric.publicationDate)}</Text>
+        )}
+        {status === "deprecated" && rubric.replacedByID && (
+          <Text>
+            Replacement rubric:{" "}
+            <ReplacementLink
+              rubricID={rubric.replacedByID}
+              allRubrics={allRubrics}
+            />
+          </Text>
+        )}
+      </Stack>
+      <Group>
+        <Button
+          component={Link}
+          href={`/rubrics/?id=${rubric.rubricID}`}
+          variant="filled"
+          color="dark"
+        >
+          View
+        </Button>
+        <Button
+          variant="filled"
+          color="dark"
+          onClick={handleDuplicate}
+          loading={duplicating}
+        >
+          Duplicate
+        </Button>
+      </Group>
+    </Stack>
+  );
+}

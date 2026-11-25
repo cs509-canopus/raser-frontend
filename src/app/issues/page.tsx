@@ -30,6 +30,9 @@ import {
   PapersApiError,
   deleteIssue,
 } from "@/lib/papers-api";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { getJournal } from "@/lib/journals-api";
+import { AxiosError } from "axios";
 
 type IssuePaper = Pick<PaperView, "paperID" | "title" | "authors">;
 
@@ -51,6 +54,7 @@ function IssueDetail() {
     useDisclosure(false);
   const [error, setError] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
+  const [journalName, setJournalName] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +75,13 @@ function IssueDetail() {
           ...fetched,
           ...prev.filter((p) => !fetched.some((f) => f.paperID === p.paperID)),
         ]);
+
+        // Fetch the parent journal
+        getJournal(i.journalID).then(async (res) => {
+          if (cancelled) return;
+          if (res.error) return;
+          setJournalName(res.result.name);
+        });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -81,6 +92,10 @@ function IssueDetail() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
+    if (issue) {
+      if (error) return;
+    }
     return () => {
       cancelled = true;
     };
@@ -102,11 +117,12 @@ function IssueDetail() {
   async function handleDeleteIssue() {
     try {
       await deleteIssue(issueId);
-      setIssue(null)
+      setIssue(null);
       window.location.reload();
-    }
-    catch (err) {
-      setError(err instanceof PapersApiError ? err.message : "Failed to delete issue")
+    } catch (err) {
+      setError(
+        err instanceof PapersApiError ? err.message : "Failed to delete issue",
+      );
     }
   }
 
@@ -149,8 +165,23 @@ function IssueDetail() {
     }
   }
 
+  const breadcrumbParts = [
+    {
+      label: "Journals",
+    },
+    {
+      label: journalName ?? "Journal",
+      href: `/journals/?id=${issue?.journalID}`,
+    },
+    {
+      label: `Vol. ${issue?.volumeNumber}, No. ${issue?.issueNumber}`,
+      href: `/issues/?id=${issue?.issueID}`,
+    },
+  ];
+
   return (
     <Stack p="lg" maw={720}>
+      <Breadcrumbs parts={breadcrumbParts} />
       <Group justify="space-between">
         <Title order={2}>
           {issue

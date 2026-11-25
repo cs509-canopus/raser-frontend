@@ -1,5 +1,5 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+import axios from "axios";
+import { backend } from "@/axios-client";
 
 export interface AddedPaper {
   journalID: string;
@@ -43,16 +43,30 @@ export class PapersApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new PapersApiError(body.error ?? res.statusText, res.status);
+interface RequestOptions {
+  method?: string;
+  body?: string;
+}
+
+// Goes through the shared axios instance so the Cognito token gets attached.
+async function request<T>(path: string, init?: RequestOptions): Promise<T> {
+  try {
+    const res = await backend.request<T>({
+      url: path,
+      method: init?.method ?? "GET",
+      data: init?.body,
+    });
+    return res.data;
+  } catch (e) {
+    if (axios.isAxiosError(e) && e.response) {
+      const body = e.response.data as { error?: string } | undefined;
+      throw new PapersApiError(
+        body?.error ?? e.response.statusText,
+        e.response.status,
+      );
+    }
+    throw e;
   }
-  return res.json() as Promise<T>;
 }
 
 export interface AddPaperInput {
@@ -76,8 +90,10 @@ export function getIssue(issueId: string): Promise<IssueView> {
   return request<IssueView>(`/issues/${issueId}`);
 }
 
-export function deleteIssue(issueId: string): Promise<IssueView> {
-  return request<{ issueID: string }>(`/issues/${issueId}`, { method: "DELETE"});
+export function deleteIssue(issueId: string): Promise<{ issueID: string }> {
+  return request<{ issueID: string }>(`/issues/${issueId}`, {
+    method: "DELETE",
+  });
 }
 
 export function getPaper(paperId: string): Promise<PaperView> {
