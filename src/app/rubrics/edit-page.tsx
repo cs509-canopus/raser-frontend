@@ -158,14 +158,24 @@ export function RubricEditPage() {
   }, [rubricID]);
 
   // UPDATE RUBRIC DETAILS
-  async function editRubric(updatedFields: Partial<Rubric>) {
+  async function editRubric(updatedFields: {
+    name?: string | undefined;
+    highQualityThreshold?: number | undefined;
+    lowQualityThreshold?: number | undefined;
+  }) {
     if (!rubricID) return;
 
     try {
       await backend.patch(`/rubrics/${rubricID}`, updatedFields);
 
       setRubric((previous) =>
-        previous ? { ...previous, ...updatedFields } : previous
+        previous ? { 
+          ...previous, 
+          ...updatedFields,
+          title: updatedFields.name ?? previous.title,
+          highQualityThreshold: updatedFields.highQualityThreshold ?? previous.highQualityThreshold,
+          lowQualityThreshold: updatedFields.lowQualityThreshold ?? previous.lowQualityThreshold,
+        } : previous
       );
 
     } catch (err) {
@@ -367,7 +377,7 @@ export function RubricEditPage() {
                 })
               }
               onBlur={() =>
-                editRubric({ title: rubric.title })
+                editRubric({ name: rubric.title })
               }
             />
 
