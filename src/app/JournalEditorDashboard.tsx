@@ -4,7 +4,7 @@ import styles from "./page.module.css";
 import { Suspense, useState, useEffect } from "react";
 import { backend } from "@/axios-client";
 import { AxiosError } from "axios";
-import { Journal, ErrorResponse } from "@/types";
+import { Journal, ErrorResponse, JournalSummary } from "@/types";
 import { HiOutlineInformationCircle } from "react-icons/hi2";
 import {
   Container,
@@ -20,6 +20,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
+import router from "next/router";
 
 export default function JournalEditorDashboard() {
   return (
@@ -30,7 +31,7 @@ export default function JournalEditorDashboard() {
 }
 
 function JournalEditorView() {
-  const [journals, setJournals] = useState<Journal[]>([]);
+  const [journals, setJournals] = useState<JournalSummary[]>([]); // journal summary
   const [error, setError] = useState<ErrorResponse | null>(null);
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
@@ -40,7 +41,7 @@ function JournalEditorView() {
     let cancelled = false;
     const fetchJournals = async () => {
       try {
-        const journalResponse = await backend.get<{ journals: Journal[] }>(
+        const journalResponse = await backend.get<{ journals: JournalSummary[] }>( // journal summary
           `/journals`,
         );
         console.log(
@@ -68,23 +69,24 @@ function JournalEditorView() {
   }, []);
 
   // add journal function for modal
-  async function addJournal(
-    name: string,
-    description?: string,
-    websiteURL?: string,
-    coverImageURL?: string,
-  ): Promise<string | undefined> {
+  async function addJournal(newJournal: NewJournal): Promise<string | undefined> {
     try {
       // journal add request
-      const req = await backend.post<Journal>(`/journals`, { name, description, websiteURL, coverImageURL });
+      const req = await backend.post<JournalSummary>(`/journals`, newJournal);
 
       // add new journal to list
       setJournals((prev) => [...prev, {
-        id: req.data.journalID,
+        id: req.data.id,
         name: req.data.name,
         description: req.data.description,
-        websiteUrl: req.data.websiteUrl,
-        coverImage: req.data.coverImageUrl,
+        coverImage: req.data.coverImage,
+        issueCount: req.data.issueCount,
+        // name: req.data.name,
+        // description: req.data.description,
+        // websiteUrl: req.data.websiteUrl,
+        // coverImage: req.data.coverImage,
+        // createdAt: req.data.createdAt,
+        // issues: req.data.issues,
       }]);
     } catch (e) {
       if (e instanceof AxiosError && e.response) {
@@ -97,15 +99,15 @@ function JournalEditorView() {
   }
 
   // withdraw journal function
-  function withdrawJournal(journal: Journal) {
+  function withdrawJournal(journal: JournalSummary) {
     if (journal === null) return;
 
     backend
       .post(`/journals/${journal.id}/withdraw`)
       .then(() => {
-        (setJournal((prev) => prev.filter((j) => j.id !== journal.id)),
+        setJournals((prev) => prev.filter((j) => j.id !== journal.id),);
           // Reload the page, which will bring them to JournalNotFound
-          window.location.reload());
+          // window.location.reload());
       })
       .catch((err) => {
         console.log(`Error on POST /journals/${journal.id}/withdraw`, err);
@@ -152,7 +154,7 @@ function JournalEditorView() {
     );
   }
 
-  function JournalCard({ journal, onSelect, onWithdraw }: JournalCardProps) {
+  function JournalCard({ journal, onWithdraw }: JournalCardProps) {
     // const issueCount = journal.issues.length;
     // TODO: only allow withdraws for journals with papers that have no reviewers assigned -> iteration 2
     const canWithdraw = true;
@@ -201,7 +203,7 @@ function JournalEditorView() {
     <Container className={styles.page} fluid>
       <Flex direction="column" gap="xs" w="100%">
         <Group justify="space-between">
-          <Stack mb="sm" spacing="xs">
+          <Stack mb="sm" gap="xs">
             <Title className={styles.title} order={1}>
               Your Journals
             </Title>
@@ -228,7 +230,7 @@ function JournalEditorView() {
           <div>
             <JournalCardList
               journals={journals}
-              onSelect={(j) => console.log("select", j.journalID)}
+              onSelect={(j) => router.push(`/journals/?id=${j.id}`)}
               onWithdraw={withdrawJournal}
             />
           </div>
@@ -251,43 +253,43 @@ function JournalEditorView() {
 
 // listing journals components
 interface JournalListProps {
-  journals: Journal[];
-  onSelect?: (journal: Journal) => void;
-  onWithdraw?: (journal: Journal) => void;
+  journals: JournalSummary[];
+  onSelect?: (journal: JournalSummary) => void;
+  onWithdraw?: (journal: JournalSummary) => void;
 }
 
 interface JournalCardProps {
-  journal: Journal;
-  onSelect?: (journal: Journal) => void;
-  onWithdraw?: (journal: Journal) => void;
+  journal: JournalSummary;
+  onSelect?: (journal: JournalSummary) => void;
+  onWithdraw?: (journal: JournalSummary) => void;
 }
 
 // Add journal modal components
 interface AddJournalModalProps {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => void;
+  onSubmit: (JournalSummary: NewJournal) => void;
 }
 
 // New journal interface
 interface NewJournal {
   name: string;
   description?: string;
-  websiteURL?: string;
-  coverImageURL?: string;
+  websiteUrl?: string;
+  coverImage?: string;
 }
 
 function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [websiteURL, setWebsiteURL] = useState("");
-  const [coverImageURL, setCoverImageURL] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [coverImage, setCoverImage] = useState("");
 
   const resetForm = () => {
     setName("");
     setDescription("");
-    setWebsiteURL("");
-    setCoverImageURL("");
+    setWebsiteUrl("");
+    setCoverImage("");
   };
 
   const handleClose = () => {
@@ -302,12 +304,14 @@ function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
     const nameTrimmed = name.trim();
     if (!nameTrimmed) return;
 
-    onSubmit(
-      nameTrimmed,
-      description.trim() || undefined,
-      websiteURL.trim() || undefined,
-      coverImageURL.trim() || undefined,
-    );
+    const newJournal = {
+      name: nameTrimmed,
+      description: description.trim() || undefined,
+      websiteUrl: websiteUrl.trim() || undefined,
+      coverImage: coverImage.trim() || undefined,
+    };
+
+    onSubmit(newJournal);
 
     resetForm();
     onClose();
@@ -343,14 +347,14 @@ function AddJournalModal({ opened, onClose, onSubmit }: AddJournalModalProps) {
         <TextInput
           label="Website URL"
           placeholder="e.g. https://dl.acm.org/journal/tocs"
-          value={websiteURL}
-          onChange={(event) => setWebsiteURL(event.currentTarget.value)}
+          value={websiteUrl}
+          onChange={(event) => setWebsiteUrl(event.currentTarget.value)}
         />
         <TextInput
           label="Cover Image URL"
           placeholder="e.g. cover_image_url.png"
-          value={coverImageURL}
-          onChange={(event) => setCoverImageURL(event.currentTarget.value)}
+          value={coverImage}
+          onChange={(event) => setCoverImage(event.currentTarget.value)}
         />
         <Group justify="flex-end" gap="xs">
           <Button className={styles.buttonAlt} onClick={handleClose}>

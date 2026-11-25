@@ -15,6 +15,37 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# RASER: Rubrics for Assessing Scientific Experimental Research
+
+## Development
+
+First, install all dependencies:
+
+```sh
+npm install
+```
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Environment variables and login
+
+Put these in `.env.local` (they're baked in at build time, so the deployed
+build needs them too):
+
+```sh
+NEXT_PUBLIC_API_URL=<api gateway url for your stage>
+NEXT_PUBLIC_USER_POOL_ID=<UserPoolId output of your stage's AuthenticationStack>
+NEXT_PUBLIC_USER_POOL_CLIENT_ID=<UserPoolClientId output of the same stack>
+```
+
+Log in at `/login/`. Signed-out visitors to any other page get sent there.
+Sign-up asks whether you're a journal editor or a rubric designer.
 
 ### Environment variables and login
 
