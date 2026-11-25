@@ -57,20 +57,11 @@ function EditRubricView() {
       console.log("Starting rubric creation...");
 
       try {
-
-        console.log("About to send POST request");
-        
         const response = await backend.post("/rubrics", {
           name: "Untitled Rubric",
           highQualityThreshold: 85,
           lowQualityThreshold: 50,
         });
-
-        console.log("Full response:", response);
-        console.log("Response data:", response.data);
-        console.log(
-          "Response data type:",
-          typeof response.data);
 
         console.log("Create rubric response:", response.data);
 
@@ -298,8 +289,7 @@ function EditRubricView() {
   }
 
 
-  // PUBLISH RUBRIC (NOT YET DONE, might have it in edit-rubric in the backend)
-  
+  // PUBLISH RUBRIC
   async function publishRubric() {
     if (!rubricID) return;
 
@@ -311,7 +301,6 @@ function EditRubricView() {
       console.error("Error publishing rubric:", err);
     }
   }
-  
 
 
   // LOADING AND ERROR STATES
@@ -339,9 +328,7 @@ function EditRubricView() {
 
   // GROUP QUESTIONS BY SECTION
 
-  const sections = Array.from(
-    new Set(questions.map((q) => q.section))
-  ).sort((a, b) => a - b);
+  const sections = [1, 2, 3, 4, 5];
 
 
   // PAGE UI
@@ -397,36 +384,36 @@ function EditRubricView() {
             <Group grow>
               <NumberInput
                 label="High Score Threshold"
-                value={rubric.highScoreThreshold}
+                value={rubric.highQualityThreshold}
                 onChange={(value) => {
                   if (typeof value === "number") {
                     setRubric({
                       ...rubric,
-                      highScoreThreshold: value,
+                      highQualityThreshold: value,
                     });
                   }
                 }}
                 onBlur={() =>
                   editRubric({
-                    highScoreThreshold: rubric.highScoreThreshold,
+                    highQualityThreshold: rubric.highQualityThreshold,
                   })
                 }
               />
 
               <NumberInput
                 label="Low Score Threshold"
-                value={rubric.lowScoreThreshold}
+                value={rubric.lowQualityThreshold}
                 onChange={(value) => {
                   if (typeof value === "number") {
                     setRubric({
                       ...rubric,
-                      lowScoreThreshold: value,
+                      lowQualityThreshold: value,
                     });
                   }
                 }}
                 onBlur={() =>
                   editRubric({
-                    lowScoreThreshold: rubric.lowScoreThreshold,
+                    lowQualityThreshold: rubric.lowQualityThreshold,
                   })
                 }
               />
@@ -486,14 +473,6 @@ function EditRubricView() {
               />
             ))}
 
-            {sections.length === 0 && (
-              <Paper withBorder p="xl">
-                <Text c="dimmed" ta="center">
-                  No questions have been added to this rubric yet.
-                </Text>
-              </Paper>
-            )}
-
             {/* Allow adding the first question */}
             <Button
               variant="light"
@@ -535,6 +514,10 @@ function SectionCard({
 }: SectionCardProps) {
   const [addingQuestion, setAddingQuestion] = useState(false);
 
+  const sortedQuestions = [...questions].sort(
+    (a, b) => a.index - b.index
+  );
+
   return (
     <Paper
       id={`section-${section}`}
@@ -546,17 +529,27 @@ function SectionCard({
       <Stack gap="md">
         <Title order={3}>Section {section}</Title>
 
-        {questions
-          .sort((a, b) => a.index - b.index)
-          .map((question) => (
-            <QuestionCard
-              key={question.index}
-              question={question}
-              onSave={onSaveQuestion}
-              onDelete={onDeleteQuestion}
-            />
-          ))}
+        {/* Display existing questions */}
+        {sortedQuestions.map((question) => (
+          <QuestionCard
+            key={question.index}
+            question={question}
+            onSave={onSaveQuestion}
+            onDelete={onDeleteQuestion}
+          />
+        ))}
 
+        {/* Automatically display an empty question if none exist */}
+        {sortedQuestions.length === 0 && (
+          <AddQuestionCard
+            section={section}
+            onAdd={onAddQuestion}
+            onCancel={() => {}}
+            showCancel={false}
+          />
+        )}
+
+        {/* Allow adding additional questions */}
         {addingQuestion ? (
           <AddQuestionCard
             section={section}
@@ -674,86 +667,96 @@ function QuestionCard({
 }
 
 
-// Adding a Question Card
-function AddQuestionCard({
-  section,
-  onAdd,
-  onCancel,
-}: {
-  section: number;
-  onAdd: (
-    section: number,
-    question: string,
-    explanations: string[]
-  ) => Promise<void>;
-  onCancel: () => void;
-}) {
-  const [question, setQuestion] = useState("");
-  const [explanations, setExplanations] = useState(
-    ["", "", "", "", ""]
-  );
-  const [loading, setLoading] = useState(false);
+  // Adding a Question Card
+  function AddQuestionCard({
+    section,
+    onAdd,
+    onCancel,
+    showCancel = true,
+  }: {
+    section: number;
+    onAdd: (
+      section: number,
+      question: string,
+      explanations: string[]
+    ) => Promise<void>;
+    onCancel: () => void;
+    showCancel?: boolean;
+  }) {
+    const [question, setQuestion] = useState("");
+    const [explanations, setExplanations] = useState(
+      ["", "", "", "", ""]
+    );
+    const [loading, setLoading] = useState(false);
 
-  async function handleSubmit() {
-    if (!question.trim()) return;
+    async function handleSubmit() {
+      if (!question.trim()) return;
 
-    setLoading(true);
+      setLoading(true);
 
-    try {
-      await onAdd(section, question, explanations);
-      onCancel();
-    } finally {
-      setLoading(false);
+      try {
+        await onAdd(section, question, explanations);
+        onCancel();
+      } catch (error) {
+        console.error("Error adding question:", error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
 
-  return (
-    <Paper withBorder p="md" radius="md" bg="gray.0">
-      <Stack>
-        <Title order={5}>Add Question</Title>
+    return (
+      <Paper withBorder p="md" radius="md" bg="gray.0">
+        <Stack>
+          <Title order={5}>Add Question</Title>
 
-        <Textarea
-          label="Question"
-          placeholder="Enter the question..."
-          value={question}
-          onChange={(event) =>
-            setQuestion(event.currentTarget.value)
-          }
-        />
-
-        <Title order={6}>Rating Explanations</Title>
-
-        {explanations.map((explanation, index) => (
           <Textarea
-            key={index}
-            label={`Score ${index + 1}`}
-            value={explanation}
-            onChange={(event) => {
-              const updated = [...explanations];
-              updated[index] = event.currentTarget.value;
-              setExplanations(updated);
-            }}
+            label="Question"
+            placeholder="Enter the question..."
+            value={question}
+            onChange={(event) =>
+              setQuestion(event.currentTarget.value)
+            }
           />
-        ))}
 
-        <Group justify="flex-end">
-          <Button variant="subtle" color="gray" onClick={onCancel}>
-            Cancel
-          </Button>
+          <Title order={6}>Rating Explanations</Title>
 
-          <Button
-            color="dark"
-            onClick={handleSubmit}
-            loading={loading}
-            disabled={!question.trim()}
-          >
-            Add Question
-          </Button>
-        </Group>
-      </Stack>
-    </Paper>
-  );
-}
+          {explanations.map((explanation, index) => (
+            <Textarea
+              key={index}
+              label={`Score ${index + 1}`}
+              value={explanation}
+              onChange={(event) => {
+                const updated = [...explanations];
+                updated[index] = event.currentTarget.value;
+                setExplanations(updated);
+              }}
+            />
+          ))}
+
+          <Group justify="flex-end">
+            {showCancel && (
+              <Button
+                variant="subtle"
+                color="gray"
+                onClick={onCancel}
+              >
+                Cancel
+              </Button>
+            )}
+
+            <Button
+              color="dark"
+              onClick={handleSubmit}
+              loading={loading}
+              disabled={!question.trim()}
+            >
+              Add Question
+            </Button>
+          </Group>
+        </Stack>
+      </Paper>
+    );
+  }
 
 
 // Loading / Error Components
